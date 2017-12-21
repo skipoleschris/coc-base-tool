@@ -1,14 +1,10 @@
 import Html exposing (..)
 import Html.Attributes exposing (rel, href, class, value, disabled, selected)
 import Html.Events exposing (onInput)
-import List exposing (repeat) 
-import Maybe exposing (..)
+import Http exposing (Error)
 
-import Http exposing (get, send, Error)
---import Json.Decode exposing (int, string, nullable, list, Decoder)
---import Json.Decode.Pipeline exposing (decode, required, optional, hardcoded)
-
-import TownHallDefinitions exposing (..)
+import TownHallDefinitions exposing (Level, TownHallDefinition, loadTownHallDefinition, townHallLevelSelect)
+import Pallette exposing (Pallette, emptyPallette, freshPallette, selectItem, changeLevelSelection, changeModeSelection, viewPallette)
 
 main = 
   Html.program 
@@ -36,6 +32,7 @@ type alias Model =
   , townHallLevels : List Level
   , townHallLevel : Maybe Level
   , definition : Maybe TownHallDefinition
+  , pallette : Pallette
   , debug : Maybe Error
   }
 
@@ -46,12 +43,13 @@ model =
   , townHallLevels = [11, 10, 9, 8, 7, 6, 5, 4, 3]
   , townHallLevel = Nothing
   , definition = Nothing
+  , pallette = emptyPallette
   , debug = Nothing
   }
 
 makeGrid : Dimension -> Grid
 makeGrid (Dimension width height) =
-  repeat height (repeat width tile)
+  List.repeat height (List.repeat width tile)
 
 tile : Tile
 tile =
@@ -62,37 +60,64 @@ tile =
 
 
 
+
 -- UPDATE
 
 type Msg = ChangeTownHallLevel String
          | TownHallDefinitionLoaded (Result Http.Error TownHallDefinition)
+         | PalletteItemSelected String
+         | PalletteLevelChange String String
+         | PalletteModeChange String String
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
   case msg of
     ChangeTownHallLevel level ->
-      ({ model | townHallLevel = String.toInt level 
+      ( { model | 
+          townHallLevel = String.toInt level |> Result.toMaybe 
+        }
+      , String.toInt level 
           |> Result.toMaybe 
-       }, 
-       String.toInt level 
-         |> Result.toMaybe 
-         |> Maybe.map loadTownHallDefinition 
-         |> Maybe.withDefault Cmd.none)
+          |> Maybe.map (loadTownHallDefinition TownHallDefinitionLoaded)
+          |> Maybe.withDefault Cmd.none
+      )
 
     TownHallDefinitionLoaded (Ok definition) ->
-      ({ model | definition = Just definition }, Cmd.none)
+      ( { model | 
+          definition = Just definition 
+        , pallette = freshPallette definition
+        }
+      , Cmd.none
+      )
 
     TownHallDefinitionLoaded (Err err) ->
-      ({ model | townHallLevel = Nothing, definition = Nothing, debug = Just err }, Cmd.none) -- TODO
+      ( { model | 
+          townHallLevel = Nothing
+        , definition = Nothing
+        , pallette = emptyPallette
+        , debug = Just err 
+        }
+      , Cmd.none
+      )
 
+    PalletteItemSelected id ->
+      ( { model | pallette = selectItem id model.pallette }
+      , Cmd.none
+      )
 
-loadTownHallDefinition : Level -> Cmd Msg
-loadTownHallDefinition level =
-  let
-    url = "data/town-hall-definitions/town-hall-" ++ (toString level) ++ ".json"
-    request = Http.get url townHallDefinitionDecoder  
-  in
-    Http.send TownHallDefinitionLoaded request
+    PalletteLevelChange id level ->
+      (
+        String.toInt level |> Result.toMaybe |> Maybe.map (\lvl ->
+          { model | pallette = changeLevelSelection id lvl model.pallette }
+        ) |> Maybe.withDefault model
+      , Cmd.none
+      )
+
+    PalletteModeChange id mode ->  
+      ( { model | pallette = changeModeSelection id mode model.pallette }
+      , Cmd.none
+      )
+
 
 -- VIEW
 
@@ -100,23 +125,13 @@ view : Model -> Html Msg
 view model =
   div [] 
     [ Html.node "link" [ rel "stylesheet", href "dev-styles.css" ] []
-    , h2 [] [ text ("Town Hall: " ++ (withDefault "-" (Maybe.map toString model.townHallLevel))) ]
-    , viewLevelSelect "Change Town Hall Level:" ChangeTownHallLevel model.townHallLevels
+    , h2 [] [ text ("Town Hall: " ++ (Maybe.map toString model.townHallLevel |> Maybe.withDefault "-")) ]
+    , townHallLevelSelect ChangeTownHallLevel model.townHallLevels
     , viewGrid model.grid
+    , viewPallette PalletteItemSelected PalletteLevelChange PalletteModeChange model.pallette
     , div [] [ model.debug |> Maybe.map toString |> Maybe.withDefault "" |> text ]
     ]
 
-viewLevelSelect : String -> (String -> msg) -> List Level -> Html msg
-viewLevelSelect lbl msg levels =
-  let 
-    optionize x =
-      option [ value (toString x)] 
-        [ text (toString x) ]
-  in
-    label []
-      [ text lbl
-      , select [ onInput msg ] (option [ disabled True, selected True ] [ text "Select Level" ] :: (List.map optionize levels))
-      ]
   
 
 viewGrid : Grid -> Html Msg
@@ -130,6 +145,8 @@ makeRow tiles =
 makeTile : Tile -> Html Msg
 makeTile tile =
   div [ Html.Attributes.class "tile grass" ] []
+
+
 
 
 -- SUBSCRIPTIONS

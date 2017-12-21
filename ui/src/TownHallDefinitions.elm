@@ -1,8 +1,21 @@
-module TownHallDefinitions exposing (Level, TownHallDefinition, townHallDefinitionDecoder)
+module TownHallDefinitions exposing 
+  ( Level
+  , TownHallDefinition
+  , AllowedBuilding
+  , Mode
+  , Walls
+  , loadTownHallDefinition
+  , townHallLevelSelect
+  )
 
 import Maybe exposing (..)
+import Http exposing (get, send, Error)
 import Json.Decode exposing (int, string, nullable, list, Decoder)
 import Json.Decode.Pipeline exposing (decode, required, optional, hardcoded)
+
+import Html exposing (..)
+import Html.Attributes exposing (value, disabled, selected)
+import Html.Events exposing (onInput)
 
 
 -- TYPES
@@ -118,3 +131,30 @@ wallsDecoder =
   decode Walls
     |> required "qty" int
     |> required "level" int
+
+
+-- UPDATE
+
+loadTownHallDefinition : (Result Http.Error TownHallDefinition -> msg) -> Level -> Cmd msg
+loadTownHallDefinition msg level =
+  let
+    url = "data/town-hall-definitions/town-hall-" ++ (toString level) ++ ".json"
+    request = Http.get url townHallDefinitionDecoder  
+  in
+    Http.send msg request
+
+
+-- VIEW
+
+townHallLevelSelect : (String -> msg) -> List Level -> Html msg
+townHallLevelSelect msg levels =
+  let 
+    optionize x =
+      option [ value (toString x)] 
+        [ text (toString x) ]
+  in
+    label []
+      [ text "Change Town Hall Level:"
+      , select [ onInput msg ] 
+          (option [ disabled True, selected True ] [ text "Select Level" ] :: (List.map optionize levels))
+      ]
