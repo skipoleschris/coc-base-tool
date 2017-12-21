@@ -1,0 +1,22 @@
+.tile {
+  width: 10px;
+  height: 10px;
+  float: left;
+  margin: 0;
+  border: 1px solid white;
+}
+
+.row {
+  width: 528px;
+  height: 12px;
+}
+
+.map {
+  width: 528px;
+  border: 1pt solid black;
+  margin: 10px;
+}
+
+.grass {
+  background-color: #7CFC00;
+}
