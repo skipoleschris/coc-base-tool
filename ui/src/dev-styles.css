@@ -31,7 +31,7 @@ body {
 .pallette {
   width: 200px;
   height: 800px;
-  overflow-y: scroll;
+  overflow-y: auto;
   border: 1pt solid black;
   margin: 10px;
 }

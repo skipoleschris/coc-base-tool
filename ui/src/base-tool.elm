@@ -1,7 +1,9 @@
+import Dict exposing (Dict)
 import Html exposing (..)
-import Html.Attributes exposing (rel, href, class, value, disabled, selected)
-import Html.Events exposing (onInput)
+import Html.Attributes exposing (rel, href, class)
+import Html.Events exposing (onClick)
 import Http exposing (Error)
+
 
 import TownHallDefinitions exposing (Level, TownHallDefinition, loadTownHallDefinition, townHallLevelSelect)
 import Pallette exposing (Pallette, emptyPallette, freshPallette, selectItem, changeLevelSelection, changeModeSelection, viewPallette)
@@ -17,18 +19,27 @@ main =
 
 -- MODEL
 
-type Dimension = Dimension Int Int
-
-
-type alias Tile = 
-  {
+type alias Dimension = 
+  { width : Int
+  , height : Int
   }
 
-type alias Grid = List (List Tile)
+type alias Row = Int
+type alias Column = Int
+type alias Coordinate = (Row, Column)
+
+type alias Tile = 
+  { 
+  }
+
+type alias Grid = 
+  { tiles : Dict Coordinate Tile
+  , size : Dimension
+  , lastClicked : Maybe Coordinate
+  }
 
 type alias Model =
-  { playAreaSize : Dimension
-  , grid : Grid
+  { grid : Grid
   , townHallLevels : List Level
   , townHallLevel : Maybe Level
   , definition : Maybe TownHallDefinition
@@ -36,10 +47,12 @@ type alias Model =
   , debug : Maybe Error
   }
 
+defaultSize : Dimension 
+defaultSize = { width = 44, height = 44 }
+
 model : Model
 model = 
-  { playAreaSize = Dimension 44 44
-  , grid = makeGrid (Dimension 44 44)
+  { grid = makeGrid defaultSize
   , townHallLevels = [11, 10, 9, 8, 7, 6, 5, 4, 3]
   , townHallLevel = Nothing
   , definition = Nothing
@@ -48,12 +61,34 @@ model =
   }
 
 makeGrid : Dimension -> Grid
-makeGrid (Dimension width height) =
-  List.repeat height (List.repeat width tile)
+makeGrid dimension =
+  let
+    tiles = List.map (\c -> (c, tile)) (allCoordinates dimension) 
+  in
+    { tiles = Dict.fromList tiles
+    , size = dimension
+    , lastClicked = Nothing
+    }
+
+allCoordinates : Dimension -> List Coordinate
+allCoordinates size =
+  let
+    colRange = List.range 1 size.width
+    rowRange = List.range 1 size.height
+  in
+    List.map (\r -> List.map (\c -> (r, c)) colRange) rowRange |> List.concat
+
+rowIndexes : Grid -> List Row
+rowIndexes grid =
+  List.range 1 grid.size.height
+
+colIndexes : Grid -> List Column
+colIndexes grid =
+  List.range 1 grid.size.width
 
 tile : Tile
 tile =
-  {
+  { 
   }
 
 
@@ -68,6 +103,7 @@ type Msg = ChangeTownHallLevel String
          | PalletteItemSelected String
          | PalletteLevelChange String String
          | PalletteModeChange String String
+         | TileClicked Coordinate
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
@@ -118,6 +154,22 @@ update msg model =
       , Cmd.none
       )
 
+    TileClicked coordinate ->
+      ( { model | 
+          grid = tileSelected coordinate model.grid model.pallette 
+        , pallette = refreshPallette [] model.pallette
+        }
+      , Cmd.none
+      )
+
+tileSelected : Coordinate -> Grid -> Pallette -> Grid
+tileSelected coordinate grid pallette =
+  { grid | lastClicked = Just coordinate }
+
+type alias PlacedBuilding = {}
+
+refreshPallette : List PlacedBuilding -> Pallette -> Pallette
+refreshPallette placed pallette = pallette
 
 -- VIEW
 
@@ -136,15 +188,15 @@ view model =
 
 viewGrid : Grid -> Html Msg
 viewGrid grid =
-  div [ Html.Attributes.class "map" ] (List.map makeRow grid)
+  div [ class "map" ] (List.map (makeRow grid) (rowIndexes grid))
 
-makeRow : List Tile -> Html Msg
-makeRow tiles =
-  div [ Html.Attributes.class "row" ] (List.map makeTile tiles)
+makeRow : Grid -> Row -> Html Msg
+makeRow grid row =
+  div [ class "row" ] (List.map (makeCol grid row) (colIndexes grid))
 
-makeTile : Tile -> Html Msg
-makeTile tile =
-  div [ Html.Attributes.class "tile grass" ] []
+makeCol : Grid -> Row -> Column -> Html Msg
+makeCol grid row col =
+  div [ class "tile grass", onClick (TileClicked (row, col)) ] []
 
 
 
