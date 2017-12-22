@@ -34,7 +34,7 @@ type alias Grid =
   { tiles : Dict Coordinate Tile
   , size : Dimension
   , lastClicked : Maybe Coordinate
-  , lastSelected : Maybe PlacedItem
+  , placed : List PlacedItem
   }
 
 
@@ -51,7 +51,7 @@ makeGrid dimension =
     { tiles = Dict.fromList tiles
     , size = dimension
     , lastClicked = Nothing
-    , lastSelected = Nothing
+    , placed = []
     }
 
 allCoordinates : Dimension -> List Coordinate
@@ -82,11 +82,11 @@ tileSelected : Coordinate -> Grid -> Maybe PlacedItem -> Grid
 tileSelected coordinate grid item =
   { grid | 
     lastClicked = Just coordinate 
-  , lastSelected = item
+  , placed = Maybe.map (\i -> i :: grid.placed) item |> Maybe.withDefault grid.placed
   }
 
 allPlacedItems : Grid -> List PlacedItem
-allPlacedItems grid = []
+allPlacedItems grid = grid.placed
 
 -- VIEW
 
