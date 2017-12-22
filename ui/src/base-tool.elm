@@ -1,12 +1,10 @@
-import Dict exposing (Dict)
 import Html exposing (..)
 import Html.Attributes exposing (rel, href, class)
-import Html.Events exposing (onClick)
 import Http exposing (Error)
 
-
 import TownHallDefinitions exposing (Level, TownHallDefinition, loadTownHallDefinition, townHallLevelSelect)
-import Pallette exposing (Pallette, emptyPallette, freshPallette, selectItem, changeLevelSelection, changeModeSelection, viewPallette)
+import Pallette exposing (..)
+import Grid exposing (..)
 
 main = 
   Html.program 
@@ -19,24 +17,6 @@ main =
 
 -- MODEL
 
-type alias Dimension = 
-  { width : Int
-  , height : Int
-  }
-
-type alias Row = Int
-type alias Column = Int
-type alias Coordinate = (Row, Column)
-
-type alias Tile = 
-  { 
-  }
-
-type alias Grid = 
-  { tiles : Dict Coordinate Tile
-  , size : Dimension
-  , lastClicked : Maybe Coordinate
-  }
 
 type alias Model =
   { grid : Grid
@@ -47,9 +27,6 @@ type alias Model =
   , debug : Maybe Error
   }
 
-defaultSize : Dimension 
-defaultSize = { width = 44, height = 44 }
-
 model : Model
 model = 
   { grid = makeGrid defaultSize
@@ -59,41 +36,6 @@ model =
   , pallette = emptyPallette
   , debug = Nothing
   }
-
-makeGrid : Dimension -> Grid
-makeGrid dimension =
-  let
-    tiles = List.map (\c -> (c, tile)) (allCoordinates dimension) 
-  in
-    { tiles = Dict.fromList tiles
-    , size = dimension
-    , lastClicked = Nothing
-    }
-
-allCoordinates : Dimension -> List Coordinate
-allCoordinates size =
-  let
-    colRange = List.range 1 size.width
-    rowRange = List.range 1 size.height
-  in
-    List.map (\r -> List.map (\c -> (r, c)) colRange) rowRange |> List.concat
-
-rowIndexes : Grid -> List Row
-rowIndexes grid =
-  List.range 1 grid.size.height
-
-colIndexes : Grid -> List Column
-colIndexes grid =
-  List.range 1 grid.size.width
-
-tile : Tile
-tile =
-  { 
-  }
-
-
-
-
 
 
 -- UPDATE
@@ -155,21 +97,19 @@ update msg model =
       )
 
     TileClicked coordinate ->
-      ( { model | 
-          grid = tileSelected coordinate model.grid model.pallette 
-        , pallette = refreshPallette [] model.pallette
-        }
+      ( updateSelectedTile coordinate model
       , Cmd.none
       )
 
-tileSelected : Coordinate -> Grid -> Pallette -> Grid
-tileSelected coordinate grid pallette =
-  { grid | lastClicked = Just coordinate }
-
-type alias PlacedBuilding = {}
-
-refreshPallette : List PlacedBuilding -> Pallette -> Pallette
-refreshPallette placed pallette = pallette
+updateSelectedTile : Coordinate -> Model -> Model
+updateSelectedTile coordinate model =
+  let
+    newGrid = tileSelected coordinate model.grid (currentPalletteItem model.pallette)
+    placedItems = allPlacedItems newGrid
+    newPallette = refreshPallette placedItems model.pallette
+  in
+    { model | grid = newGrid, pallette = newPallette }
+      
 
 -- VIEW
 
@@ -179,26 +119,10 @@ view model =
     [ Html.node "link" [ rel "stylesheet", href "dev-styles.css" ] []
     , h2 [] [ text ("Town Hall: " ++ (Maybe.map toString model.townHallLevel |> Maybe.withDefault "-")) ]
     , townHallLevelSelect ChangeTownHallLevel model.townHallLevels
-    , viewGrid model.grid
+    , viewGrid TileClicked model.grid
     , viewPallette PalletteItemSelected PalletteLevelChange PalletteModeChange model.pallette
     , div [] [ model.debug |> Maybe.map toString |> Maybe.withDefault "" |> text ]
     ]
-
-  
-
-viewGrid : Grid -> Html Msg
-viewGrid grid =
-  div [ class "map" ] (List.map (makeRow grid) (rowIndexes grid))
-
-makeRow : Grid -> Row -> Html Msg
-makeRow grid row =
-  div [ class "row" ] (List.map (makeCol grid row) (colIndexes grid))
-
-makeCol : Grid -> Row -> Column -> Html Msg
-makeCol grid row col =
-  div [ class "tile grass", onClick (TileClicked (row, col)) ] []
-
-
 
 
 -- SUBSCRIPTIONS

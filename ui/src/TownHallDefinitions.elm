@@ -2,6 +2,7 @@ module TownHallDefinitions exposing
   ( Level
   , TownHallDefinition
   , AllowedBuilding
+  , Size
   , Mode
   , Walls
   , loadTownHallDefinition
