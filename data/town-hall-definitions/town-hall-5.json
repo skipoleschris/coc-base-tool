@@ -1,0 +1,210 @@
+{
+  "level": 5,
+  "defences": [
+    { 
+      "id": "cannon", 
+      "name": "Cannon",
+      "qty": 3, 
+      "level": 6, 
+      "size": { "width": 3, "height": 3 },
+      "modes": [
+        { "id": "normal", "name": "Normal" },
+        { "id": "burst", "name": "Burst", "max": 1, "level": 7 }
+      ]
+    },
+    { 
+      "id": "archer-tower", 
+      "name": "Archer Tower",
+      "qty": 3, 
+      "level": 6, 
+      "size": { "width": 3, "height": 3 },
+      "modes": [
+        { "id": "long-range", "name": "Long Range" },
+        { "id": "fast-attack", "name": "Fast Attack", "max": 1, "level": 10 }
+      ]
+    },
+    { 
+      "id": "mortar", 
+      "name": "Mortar",
+      "qty": 1, 
+      "level": 3, 
+      "size": { "width": 3, "height": 3 }
+    },
+    { 
+      "id": "air-defence", 
+      "name": "Air Defence",
+      "qty": 1, 
+      "level": 3, 
+      "size": { "width": 3, "height": 3 } 
+    },
+    { 
+      "id": "wizard-tower", 
+      "name": "Wizard Tower",
+      "qty": 1, 
+      "level": 2, 
+      "size": { "width": 3, "height": 3 } 
+    }
+  ],
+  "army": [
+    { 
+      "id": "army-camp", 
+      "name": "Army Camp",
+      "qty": 3, 
+      "level": 5, 
+      "size": { "width": 5, "height": 5 } 
+    },
+    { 
+      "id": "barracks", 
+      "name": "Barracks",
+      "qty": 3, 
+      "level": 7, 
+      "size": { "width": 3, "height": 3 } 
+    },
+    { 
+      "id": "laboratory", 
+      "name": "Laboratory",
+      "qty": 1, 
+      "level": 3, 
+      "size": { "width": 4, "height": 4 } 
+    },
+    { 
+      "id": "spell-factory", 
+      "name": "Spell Factory",
+      "qty": 1, 
+      "level": 1, 
+      "size": { "width": 3, "height": 3 } 
+    }
+  ],
+  "resources": [
+    { 
+      "id": "town-hall", 
+      "name": "Town Hall",
+      "qty": 1, 
+      "level": 5,
+      "minLevel": 5, 
+      "size": { "width": 4, "height": 4 } 
+    },
+    { 
+      "id": "gold-mine", 
+      "name": "Gold Mine",
+      "qty": 5, 
+      "level": 10, 
+      "size": { "width": 3, "height": 3 } 
+    },
+    { 
+      "id": "elixir-collector", 
+      "name": "Elixir Collector",
+      "qty": 5, 
+      "level": 10, 
+      "size": { "width": 3, "height": 3 } 
+    },
+    { 
+      "id": "gold-storage", 
+      "name": "Gold Storage",
+      "qty": 2, 
+      "level": 9, 
+      "size": { "width": 3, "height": 3 } 
+    },
+    { 
+      "id": "elixir-storage", 
+      "name": "Elixir Storage",
+      "qty": 2, 
+      "level": 9, 
+      "size": { "width": 3, "height": 3 } 
+    },
+    { 
+      "id": "builders-hut", 
+      "name": "Builder's Hut",
+      "qty": 5, 
+      "level": 1, 
+      "size": { "width": 2, "height": 2 } 
+    },
+    { 
+      "id": "clan-castle", 
+      "name": "Clan Castle",
+      "qty": 1, 
+      "level": 2, 
+      "size": { "width": 3, "height": 3 } 
+    }
+  ],
+  "traps": [
+    { 
+      "id": "bomb", 
+      "name": "Bomb",
+      "qty": 4, 
+      "level": 3, 
+      "size": { "width": 1, "height": 1 } 
+    },
+    { 
+      "id": "spring-trap", 
+      "name": "Spring Trap",
+      "qty": 2, 
+      "level": 1, 
+      "size": { "width": 1, "height": 1 } 
+    },
+    { 
+      "id": "air-bomb", 
+      "name": "Air Bomb",
+      "qty": 2, 
+      "level": 2, 
+      "size": { "width": 1, "height": 1 } 
+    }
+  ],
+  "troops": [
+    {
+      "id": "barbarian",
+      "name": "Barbarian",
+      "level": 3
+    },
+    {
+      "id": "archer",
+      "name": "Archer",
+      "level": 3
+    },
+    {
+      "id": "giant",
+      "name": "Giant",
+      "level": 2
+    },
+    {
+      "id": "goblin",
+      "name": "Goblin",
+      "level": 3
+    },
+    {
+      "id": "wall-breaker",
+      "name": "Wall Breaker",
+      "level": 2
+    },
+    {
+      "id": "balloon",
+      "name": "Balloon",
+      "level": 2
+    },
+    {
+      "id": "wizard",
+      "name": "Wizard",
+      "level": 2
+    }
+  ],
+  "spells": [
+    {
+      "id": "lightening",
+      "name": "Lightening",
+      "level": 4
+    },
+    {
+      "id": "heal",
+      "name": "Heal",
+      "level": 2
+    },
+    {
+      "id": "rage",
+      "name": "Rage",
+      "level": 2
+    }
+  ],
+  "walls": [
+    { "qty": 100, "level": 5 }
+  ]
+}

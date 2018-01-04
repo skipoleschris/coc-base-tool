@@ -355,6 +355,16 @@
       "id": "bowler",
       "name": "Bowler",
       "level": 2
+    },
+    {
+      "id": "barbarian-king",
+      "name": "Barbarian King",
+      "level": 40
+    },
+    {
+      "id": "archer-queen",
+      "name": "Archer Queen",
+      "level": 40
     }
   ],
   "spells": [
@@ -407,16 +417,6 @@
       "id": "skeleton",
       "name": "Skeleton",
       "level": 3
-    },
-    {
-      "id": "barbarian-king",
-      "name": "Barbarian King",
-      "level": 40
-    },
-    {
-      "id": "archer-queen",
-      "name": "Archer Queen",
-      "level": 40
     }
   ],
   "walls": [

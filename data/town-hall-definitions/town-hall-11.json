@@ -369,6 +369,21 @@
       "id": "bowler",
       "name": "Bowler",
       "level": 3
+    },
+    {
+      "id": "barbarian-king",
+      "name": "Barbarian King",
+      "level": 50
+    },
+    {
+      "id": "archer-queen",
+      "name": "Archer Queen",
+      "level": 50
+    },
+    {
+      "id": "grand-warden",
+      "name": "Grand Warden",
+      "level": 20
     }
   ],
   "spells": [
@@ -421,21 +436,6 @@
       "id": "skeleton",
       "name": "Skeleton",
       "level": 4
-    },
-    {
-      "id": "barbarian-king",
-      "name": "Barbarian King",
-      "level": 50
-    },
-    {
-      "id": "archer-queen",
-      "name": "Archer Queen",
-      "level": 50
-    },
-    {
-      "id": "grand-warden",
-      "name": "Grand Warden",
-      "level": 20
     }
   ],
   "walls": [

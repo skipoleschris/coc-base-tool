@@ -1,0 +1,145 @@
+{
+  "level": 3,
+  "defences": [
+    { 
+      "id": "cannon", 
+      "name": "Cannon",
+      "qty": 2, 
+      "level": 4, 
+      "size": { "width": 3, "height": 3 },
+      "modes": [
+        { "id": "normal", "name": "Normal" },
+        { "id": "burst", "name": "Burst", "max": 1, "level": 7 }
+      ]
+    },
+    { 
+      "id": "archer-tower", 
+      "name": "Archer Tower",
+      "qty": 1, 
+      "level": 3, 
+      "size": { "width": 3, "height": 3 },
+      "modes": [
+        { "id": "long-range", "name": "Long Range" },
+        { "id": "fast-attack", "name": "Fast Attack", "max": 1, "level": 10 }
+      ]
+    },
+    { 
+      "id": "mortar", 
+      "name": "Mortar",
+      "qty": 1, 
+      "level": 1, 
+      "size": { "width": 3, "height": 3 }
+    }
+  ],
+  "army": [
+    { 
+      "id": "army-camp", 
+      "name": "Army Camp",
+      "qty": 2, 
+      "level": 3, 
+      "size": { "width": 5, "height": 5 } 
+    },
+    { 
+      "id": "barracks", 
+      "name": "Barracks",
+      "qty": 3, 
+      "level": 5, 
+      "size": { "width": 3, "height": 3 } 
+    },
+    { 
+      "id": "laboratory", 
+      "name": "Laboratory",
+      "qty": 1, 
+      "level": 1, 
+      "size": { "width": 4, "height": 4 } 
+    }
+  ],
+  "resources": [
+    { 
+      "id": "town-hall", 
+      "name": "Town Hall",
+      "qty": 1, 
+      "level": 3,
+      "minLevel": 3, 
+      "size": { "width": 4, "height": 4 } 
+    },
+    { 
+      "id": "gold-mine", 
+      "name": "Gold Mine",
+      "qty": 3, 
+      "level": 6, 
+      "size": { "width": 3, "height": 3 } 
+    },
+    { 
+      "id": "elixir-collector", 
+      "name": "Elixir Collector",
+      "qty": 3, 
+      "level": 6, 
+      "size": { "width": 3, "height": 3 } 
+    },
+    { 
+      "id": "gold-storage", 
+      "name": "Gold Storage",
+      "qty": 2, 
+      "level": 6, 
+      "size": { "width": 3, "height": 3 } 
+    },
+    { 
+      "id": "elixir-storage", 
+      "name": "Elixir Storage",
+      "qty": 2, 
+      "level": 6, 
+      "size": { "width": 3, "height": 3 } 
+    },
+    { 
+      "id": "builders-hut", 
+      "name": "Builder's Hut",
+      "qty": 5, 
+      "level": 1, 
+      "size": { "width": 2, "height": 2 } 
+    },
+    { 
+      "id": "clan-castle", 
+      "name": "Clan Castle",
+      "qty": 1, 
+      "level": 1, 
+      "size": { "width": 3, "height": 3 } 
+    }
+  ],
+  "traps": [
+    { 
+      "id": "bomb", 
+      "name": "Bomb",
+      "qty": 2, 
+      "level": 2, 
+      "size": { "width": 1, "height": 1 } 
+    }
+  ],
+  "troops": [
+    {
+      "id": "barbarian",
+      "name": "Barbarian",
+      "level": 2
+    },
+    {
+      "id": "archer",
+      "name": "Archer",
+      "level": 2
+    },
+    {
+      "id": "goblin",
+      "name": "Goblin",
+      "level": 2
+    }
+  ],
+  "spells": [
+    {
+      "id": "lightening",
+      "name": "Lightening",
+      "level": 2
+    }
+  ],
+  "walls": [
+    { "qty": 50, "level": 3 }
+  ]
+}

@@ -1,11 +1,11 @@
 {
-  "level": 9,
+  "level": 7,
   "defences": [
     { 
       "id": "cannon", 
       "name": "Cannon",
       "qty": 5, 
-      "level": 11, 
+      "level": 8, 
       "size": { "width": 3, "height": 3 },
       "modes": [
         { "id": "normal", "name": "Normal" },
@@ -15,8 +15,8 @@
     { 
       "id": "archer-tower", 
       "name": "Archer Tower",
-      "qty": 6, 
-      "level": 11, 
+      "qty": 4, 
+      "level": 8, 
       "size": { "width": 3, "height": 3 },
       "modes": [
         { "id": "long-range", "name": "Long Range" },
@@ -26,55 +26,37 @@
     { 
       "id": "mortar", 
       "name": "Mortar",
-      "qty": 4, 
-      "level": 7, 
+      "qty": 3, 
+      "level": 5, 
       "size": { "width": 3, "height": 3 }
     },
     { 
       "id": "air-defence", 
       "name": "Air Defence",
-      "qty": 4, 
-      "level": 7, 
+      "qty": 3, 
+      "level": 5, 
       "size": { "width": 3, "height": 3 } 
     },
     { 
       "id": "wizard-tower", 
       "name": "Wizard Tower",
-      "qty": 4, 
-      "level": 7, 
+      "qty": 2, 
+      "level": 4, 
       "size": { "width": 3, "height": 3 } 
     },
     { 
       "id": "air-sweeper", 
       "name": "Air Sweeper",
-      "qty": 2, 
-      "level": 5, 
+      "qty": 1, 
+      "level": 3, 
       "size": { "width": 2, "height": 2 } 
     },
     { 
       "id": "hidden-tesla", 
       "name": "Hidden Tesla",
-      "qty": 4, 
-      "level": 7, 
-      "size": { "width": 2, "height": 2 } 
-    },
-    { 
-      "id": "bomb-tower", 
-      "name": "Bomb Tower",
-      "qty": 1, 
-      "level": 3, 
-      "size": { "width": 3, "height": 3 } 
-    },
-    { 
-      "id": "x-bow", 
-      "name": "X-Bow",
       "qty": 2, 
       "level": 3, 
-      "size": { "width": 3, "height": 3 }, 
-      "modes": [
-        { "id": "ground", "name": "Ground" },
-        { "id": "air-and-ground", "name": "Air & ground" }
-      ]
+      "size": { "width": 2, "height": 2 } 
     }
   ],
   "army": [
@@ -82,54 +64,40 @@
       "id": "army-camp", 
       "name": "Army Camp",
       "qty": 4, 
-      "level": 7, 
+      "level": 6, 
       "size": { "width": 5, "height": 5 } 
     },
     { 
       "id": "barracks", 
       "name": "Barracks",
       "qty": 4, 
-      "level": 11, 
+      "level": 9, 
       "size": { "width": 3, "height": 3 } 
     },
     { 
       "id": "dark-barracks", 
       "name": "Dark Barracks",
-      "qty": 2, 
-      "level": 6, 
+      "qty": 1, 
+      "level": 2, 
       "size": { "width": 3, "height": 3 } 
     },
     { 
       "id": "laboratory", 
       "name": "Laboratory",
       "qty": 1, 
-      "level": 7, 
+      "level": 5, 
       "size": { "width": 4, "height": 4 } 
     },
     { 
       "id": "spell-factory", 
       "name": "Spell Factory",
       "qty": 1, 
-      "level": 4, 
-      "size": { "width": 3, "height": 3 } 
-    },
-    { 
-      "id": "dark-spell-factory", 
-      "name": "Dark Spell Factory",
-      "qty": 1, 
-      "level": 4, 
+      "level": 3, 
       "size": { "width": 3, "height": 3 } 
     },
     { 
       "id": "barbarian-king-altar", 
       "name": "Barbarian King Altar",
-      "qty": 1, 
-      "level": 1, 
-      "size": { "width": 3, "height": 3 } 
-    },
-    { 
-      "id": "archer-queen-altar", 
-      "name": "Archer Queen Altar",
       "qty": 1, 
       "level": 1, 
       "size": { "width": 3, "height": 3 } 
@@ -140,42 +108,42 @@
       "id": "town-hall", 
       "name": "Town Hall",
       "qty": 1, 
-      "level": 9,
-      "minLevel": 9, 
+      "level": 7,
+      "minLevel": 7, 
       "size": { "width": 4, "height": 4 } 
     },
     { 
       "id": "gold-mine", 
       "name": "Gold Mine",
-      "qty": 7, 
-      "level": 12, 
+      "qty": 6, 
+      "level": 11, 
       "size": { "width": 3, "height": 3 } 
     },
     { 
       "id": "elixir-collector", 
       "name": "Elixir Collector",
-      "qty": 7, 
-      "level": 12, 
+      "qty": 6, 
+      "level": 11, 
       "size": { "width": 3, "height": 3 } 
     },
     { 
       "id": "dark-elixir-drill", 
       "name": "Dark Elixir Drill",
-      "qty": 2, 
-      "level": 6, 
+      "qty": 1, 
+      "level": 3, 
       "size": { "width": 3, "height": 3 } 
     },
     { 
       "id": "gold-storage", 
       "name": "Gold Storage",
-      "qty": 4, 
+      "qty": 2, 
       "level": 11, 
       "size": { "width": 3, "height": 3 } 
     },
     { 
       "id": "elixir-storage", 
       "name": "Elixir Storage",
-      "qty": 4, 
+      "qty": 2, 
       "level": 11, 
       "size": { "width": 3, "height": 3 } 
     },
@@ -183,7 +151,7 @@
       "id": "dark-elixir-storage", 
       "name": "Dark Elixir Storage",
       "qty": 1, 
-      "level": 6, 
+      "level": 2, 
       "size": { "width": 3, "height": 3 } 
     },
     { 
@@ -197,7 +165,7 @@
       "id": "clan-castle", 
       "name": "Clan Castle",
       "qty": 1, 
-      "level": 5, 
+      "level": 3, 
       "size": { "width": 3, "height": 3 } 
     }
   ],
@@ -206,42 +174,42 @@
       "id": "bomb", 
       "name": "Bomb",
       "qty": 6, 
-      "level": 6, 
+      "level": 4, 
       "size": { "width": 1, "height": 1 } 
     },
     { 
       "id": "spring-trap", 
       "name": "Spring Trap",
       "qty": 6, 
-      "level": 4, 
+      "level": 2, 
       "size": { "width": 1, "height": 1 } 
     },
     { 
       "id": "air-bomb", 
       "name": "Air Bomb",
-      "qty": 4, 
-      "level": 4, 
+      "qty": 2, 
+      "level": 3, 
       "size": { "width": 1, "height": 1 } 
     },
     { 
       "id": "giant-bomb", 
       "name": "Giant Bomb",
-      "qty": 4, 
-      "level": 3, 
+      "qty": 2, 
+      "level": 2, 
       "size": { "width": 2, "height": 2 } 
     },
     { 
       "id": "seeking-air-mine", 
       "name": "Seeking Air Mine",
-      "qty": 4, 
-      "level": 2, 
+      "qty": 1, 
+      "level": 1, 
       "size": { "width": 1, "height": 1 } 
     },
     { 
       "id": "skeleton-trap", 
       "name": "Skeleton Trap",
       "qty": 2, 
-      "level": 3, 
+      "level": 2, 
       "size": { "width": 1, "height": 1 },
       "modes": [
         { "id": "ground", "name": "Ground" },
@@ -253,137 +221,82 @@
     {
       "id": "barbarian",
       "name": "Barbarian",
-      "level": 6
+      "level": 4
     },
     {
       "id": "archer",
       "name": "Archer",
-      "level": 6
+      "level": 4
     },
     {
       "id": "giant",
       "name": "Giant",
-      "level": 6
+      "level": 4
     },
     {
       "id": "goblin",
       "name": "Goblin",
-      "level": 6
+      "level": 4
     },
     {
       "id": "wall-breaker",
       "name": "Wall Breaker",
-      "level": 5
+      "level": 4
     },
     {
       "id": "balloon",
       "name": "Balloon",
-      "level": 6
+      "level": 4
     },
     {
       "id": "wizard",
       "name": "Wizard",
-      "level": 6
+      "level": 4
     },
     {
       "id": "healer",
       "name": "Healer",
-      "level": 4
+      "level": 2
     },
     {
       "id": "dragon",
       "name": "Dragon",
-      "level": 4
-    },
-    {
-      "id": "pekka",
-      "name": "P.E.K.K.A",
-      "level": 3
-    },
-    {
-      "id": "baby-dragon",
-      "name": "Baby Dragon",
       "level": 2
     },
     {
       "id": "minion",
       "name": "minion",
-      "level": 5
+      "level": 2
     },
     {
       "id": "hog-rider",
       "name": "Hog Rider",
-      "level": 5
-    },
-    {
-      "id": "valkyrie",
-      "name": "Valkyrie",
-      "level": 4
-    },
-    {
-      "id": "golem",
-      "name": "Golem",
-      "level": 4
-    },
-    {
-      "id": "witch",
-      "name": "Witch",
-      "level": 2
-    },
-    {
-      "id": "lava-hound",
-      "name": "Lava Hound",
       "level": 2
     },
     {
       "id": "barbarian-king",
       "name": "Barbarian King",
-      "level": 30
-    },
-    {
-      "id": "archer-queen",
-      "name": "Archer Queen",
-      "level": 30
+      "level": 5
     }
   ],
   "spells": [
     {
       "id": "lightening",
       "name": "Lightening",
-      "level": 6
+      "level": 4
     },
     {
       "id": "heal",
       "name": "Heal",
-      "level": 6
+      "level": 4
     },
     {
       "id": "rage",
       "name": "Rage",
-      "level": 5
-    },
-    {
-      "id": "jump",
-      "name": "Jump",
-      "level": 2
-    },
-    {
-      "id": "poison",
-      "name": "Poison",
-      "level": 3
-    },
-    {
-      "id": "earthquake",
-      "name": "Earthquake",
-      "level": 3
-    },
-    {
-      "id": "haste",
-      "name": "Haste",
-      "level": 2
+      "level": 4
     }
   ],
   "walls": [
-    { "qty": 250, "level": 10 }
+    { "qty": 175, "level": 7 }
   ]
 }
