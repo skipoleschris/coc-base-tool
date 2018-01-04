@@ -66,6 +66,7 @@ type alias PlacedItem =
   { id : String
   , level : Level
   , mode : Maybe String
+  , size : Size
   }
 
 
@@ -179,8 +180,17 @@ currentPalletteItem pallette =
     { id = id
     , level = Dict.get id pallette.options |> Maybe.map (\o -> o.level) |> Maybe.withDefault 1
     , mode = Dict.get id pallette.options |> Maybe.map (\o -> o.mode) |> Maybe.withDefault Nothing
+    , size = itemSize pallette id
     }
   ) pallette.selected 
+
+itemSize : Pallette -> String -> Size
+itemSize pallette id =
+  pallette.items
+    |> List.filter (\i -> i.id == id)
+    |> List.head
+    |> Maybe.map (\i -> i.size)
+    |> Maybe.withDefault { width = 1, height = 1 }
 
 newConsumption : PlacedItem -> Consumption
 newConsumption item =

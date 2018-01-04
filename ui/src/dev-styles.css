@@ -18,26 +18,21 @@ body {
   height: 10px;
   float: left;
   margin: 0;
-  border: 1px solid white;
 }
 
 .row {
   width: 528px;
-  height: 12px;
+  height: 10px;
 }
 
 .map {
   position: absolute;
   top: 40px;
   left: 240px;
-  width: 528px;
+  width: 439px;
+  height: 439px;
   border: 1pt solid black;
 }
-
-.grass {
-  background-image: url('data/images/grass.png');
-}
-
 
 
 .pallette {
@@ -64,7 +59,7 @@ body {
 
 .pallette-detail {
   height: 50px;
-  padding-left: 2px;
+  padding-left: 5px;
 }
 
 .pallette-label {
