@@ -351,18 +351,21 @@ makePalleteItem clickMsg levelMsg modeMsg pallette item =
     option = 
       Dict.get item.id pallette.options
   in
-    div [ class style 
+    div [ class ("pallette-item " ++ style) 
         , onClick (clickMsg item.id)
         ] 
-        [ div [] 
+        [ div [ class "pallette-image" ] 
               [ img [ src (itemImage item option)
                     , alt item.name
                     ] [] 
-              , text item.name 
               ]
-        , div [] [ text ((toString placedCount) ++ " of " ++ (toString item.quantity) ++ " placed") ]
-        , div [] [ viewLevels (levelMsg item.id) option availableLevels ]
-        , div [] [ viewModes (modeMsg item.id) option item.modes ]
+        , div [ class "pallette-detail" ] 
+              [ text item.name 
+              , br [] []
+              , text ((toString placedCount) ++ " of " ++ (toString item.quantity) ++ " placed")
+              ]
+        , viewLevels (levelMsg item.id) option availableLevels
+        , viewModes (modeMsg item.id) option item.modes
         ]
 
 itemImage : PalletteItem -> Maybe PalletteOption -> String
@@ -406,11 +409,10 @@ viewLevels msg opt levels =
       [x] -> 
         text ("Level: " ++ toString x)
       xs  -> 
-        label []
-          [ text "Level:"
-          , select [ onInput msg ] 
-              (List.map optionize xs)
-          ]
+        div []
+            [ div [ class "pallette-label" ] [ label [] [ text "Level:" ] ]
+            , select [ onInput msg, class "pallette-select" ] (List.map optionize xs)
+            ]
 
 isLevelSelected : Level -> Maybe PalletteOption -> Bool
 isLevelSelected level option =
@@ -431,11 +433,10 @@ viewModes msg opt modes =
       [] ->
         text ""
       xs ->
-        label []
-          [ text "Mode: "
-          , select [ onInput msg ] 
-              (List.map optionize xs)
-          ]
+        div []
+            [ div [ class "pallette-label" ] [ label [] [ text "Mode: " ] ]
+            , select [ onInput msg, class "pallette-select" ] (List.map optionize xs)
+            ]
 
 isModeSelected : PalletteMode -> Maybe PalletteOption -> Bool
 isModeSelected mode option =
