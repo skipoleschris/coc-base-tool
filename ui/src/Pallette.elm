@@ -35,12 +35,20 @@ type alias PalletteItem =
   , maxLevel : Level
   , minLevel : Maybe Level
   , size : Size 
-  , modes : List Mode
+  , modes : List PalletteMode
+  }
+
+type alias PalletteMode =
+  { id : String
+  , name : String
+  , maxAllowed : Maybe Int 
+  , minLevel : Maybe Int
   }
 
 type alias PalletteOption =
   { availableLevels : List Level
   , disabledModes : List String
+  , lockedModes : List String
   , level : Level
   , mode : Maybe String 
   }
@@ -95,6 +103,7 @@ itemToOption item =
   in
     { availableLevels = availableLevels
     , disabledModes = []
+    , lockedModes = []
     , level = List.head availableLevels |> Maybe.withDefault 1
     , mode = List.head item.modes |> Maybe.map (\m -> m.id)
     }
@@ -129,7 +138,7 @@ updateOptionsForItem consumptions options item =
       Just c ->
         (item.id, applyOptionUpdate item.modes c option)
 
-applyOptionUpdate : List Mode -> Consumption -> PalletteOption -> PalletteOption
+applyOptionUpdate : List PalletteMode -> Consumption -> PalletteOption -> PalletteOption
 applyOptionUpdate modes consumption option = 
   let
     consumedModes =
@@ -152,7 +161,7 @@ applyOptionUpdate modes consumption option =
       , mode = if invalidMode then defaultMode else option.mode 
       }
 
-isModeConsumed : Consumption -> Mode -> Bool  
+isModeConsumed : Consumption -> PalletteMode -> Bool  
 isModeConsumed consumption mode =
   let
     numberPlaced =
@@ -233,10 +242,49 @@ selectItem id pallette =
 
 changeLevelSelection : String -> Level -> Pallette -> Pallette
 changeLevelSelection id level pallette =
-  { pallette | 
-      options = Dict.update id (Maybe.map (\o -> { o | level = level })) pallette.options
-  }
-  --TODO: disable mode if level is not valid
+  let
+    modes = 
+      pallette.items
+        |> List.filter (\i -> i.id == id)
+        |> List.head
+        |> Maybe.map (\i -> i.modes)
+        |> Maybe.withDefault []
+  in
+    { pallette | 
+        options = Dict.update id (Maybe.map (updateOptionLevel modes level)) pallette.options
+    }
+
+updateOptionLevel : List PalletteMode -> Level -> PalletteOption -> PalletteOption  
+updateOptionLevel modes newLevel option =
+  let
+    lockedModes = 
+      identifyLockedModes modes newLevel
+
+    newMode =
+      case option.mode of
+        Nothing -> 
+          Nothing
+        Just m ->
+          if (List.member m lockedModes)
+          then List.head modes |> Maybe.map (\m -> m.id)
+          else Just m
+  in
+    {
+      option | 
+      level = newLevel
+    , mode = newMode
+    , lockedModes = lockedModes
+    }
+
+identifyLockedModes : List PalletteMode -> Level -> List String
+identifyLockedModes modes level =
+  modes 
+    |> List.filter (\m -> 
+         case m.minLevel of
+           Nothing -> False
+           Just l  -> l > level
+       )
+    |> List.map (\m -> m.id)
 
 changeModeSelection : String -> String -> Pallette -> Pallette
 changeModeSelection id mode pallette =
@@ -334,7 +382,7 @@ isLevelSelected level option =
   Maybe.map (\opt -> opt.level == level) option 
     |> Maybe.withDefault False
 
-viewModes : (String -> msg) -> Maybe PalletteOption -> List Mode -> Html msg
+viewModes : (String -> msg) -> Maybe PalletteOption -> List PalletteMode -> Html msg
 viewModes msg opt modes =
   let
     optionize mode =
@@ -354,13 +402,16 @@ viewModes msg opt modes =
               (List.map optionize xs)
           ]
 
-isModeSelected : Mode -> Maybe PalletteOption -> Bool
+isModeSelected : PalletteMode -> Maybe PalletteOption -> Bool
 isModeSelected mode option =
   Maybe.map (\opt -> opt.mode == Just mode.id) option 
     |> Maybe.withDefault False
 
-isModeDisabled : Mode -> Maybe PalletteOption -> Bool
+isModeDisabled : PalletteMode -> Maybe PalletteOption -> Bool
 isModeDisabled mode option = 
   option 
-    |> Maybe.map (\opt -> List.member mode.id opt.disabledModes)
+    |> Maybe.map (\opt -> 
+          List.member mode.id opt.disabledModes ||
+          List.member mode.id opt.lockedModes
+       )
     |> Maybe.withDefault False
