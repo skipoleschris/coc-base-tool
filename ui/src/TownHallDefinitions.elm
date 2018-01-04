@@ -15,7 +15,7 @@ import Json.Decode exposing (int, string, nullable, list, Decoder)
 import Json.Decode.Pipeline exposing (decode, required, optional, hardcoded)
 
 import Html exposing (..)
-import Html.Attributes exposing (value, disabled, selected)
+import Html.Attributes exposing (value, disabled, selected, class)
 import Html.Events exposing (onInput)
 
 
@@ -154,8 +154,11 @@ townHallLevelSelect msg levels =
       option [ value (toString x)] 
         [ text (toString x) ]
   in
-    label []
-      [ text "Change Town Hall Level:"
-      , select [ onInput msg ] 
-          (option [ disabled True, selected True ] [ text "Select Level" ] :: (List.map optionize levels))
-      ]
+    div [ class "town-hall-level" ] [
+      label []
+        [ text "Town Hall Level: "
+        , select [ onInput msg ] 
+            (option [ disabled True, selected True ] [ text "Select Level" ] :: (List.map optionize levels))
+        ]
+    ]
+

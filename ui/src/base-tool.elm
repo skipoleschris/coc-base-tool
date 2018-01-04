@@ -117,11 +117,9 @@ view : Model -> Html Msg
 view model =
   div [] 
     [ Html.node "link" [ rel "stylesheet", href "dev-styles.css" ] []
-    , h2 [] [ text ("Town Hall: " ++ (Maybe.map toString model.townHallLevel |> Maybe.withDefault "-")) ]
     , townHallLevelSelect ChangeTownHallLevel model.townHallLevels
     , viewGrid TileClicked model.grid
     , viewPallette PalletteItemSelected PalletteLevelChange PalletteModeChange model.pallette
-    , div [] [ model.debug |> Maybe.map toString |> Maybe.withDefault "" |> text ]
     ]
 
 

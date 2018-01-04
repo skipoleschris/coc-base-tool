@@ -3,6 +3,16 @@ body {
   font-size: 10pt;
 }
 
+.town-hall-level {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  width: 100%;
+}
+
+
+
+
 .tile {
   width: 10px;
   height: 10px;
@@ -17,23 +27,27 @@ body {
 }
 
 .map {
+  position: absolute;
+  top: 40px;
+  left: 240px;
   width: 528px;
   border: 1pt solid black;
-  margin: 10px;
 }
 
 .grass {
-  background-color: #7CFC00;
+  background-image: url('data/images/grass.png');
 }
 
 
 
 .pallette {
+  position: absolute;
+  top: 40px;
+  left: 10px;
   width: 200px;
-  height: 800px;
+  height: 90%;
   overflow-y: auto;
   border: 1pt solid black;
-  margin: 10px;
 }
 
 .pallette-item {
