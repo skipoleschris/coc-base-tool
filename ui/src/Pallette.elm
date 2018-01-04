@@ -13,7 +13,7 @@ module Pallette exposing
 
 import Dict exposing (Dict)
 import Html exposing (..)
-import Html.Attributes exposing (class, value, disabled, selected)
+import Html.Attributes exposing (class, value, disabled, selected, src, alt)
 import Html.Events exposing (onInput, onClick)
 
 import TownHallDefinitions exposing (..)
@@ -86,8 +86,8 @@ freshPallette def =
 
 wallsToPalletteItem : Walls -> PalletteItem
 wallsToPalletteItem w =
-  { id = "wall"
-  , name = "Wall"
+  { id = "wall" ++ (toString w.maxLevel)
+  , name = "Wall (max level " ++ (toString w.maxLevel) ++ ")"
   , quantity = w.quantity
   , maxLevel = w.maxLevel
   , minLevel = Nothing
@@ -351,12 +351,47 @@ makePalleteItem clickMsg levelMsg modeMsg pallette item =
     option = 
       Dict.get item.id pallette.options
   in
-    div [ class style ] 
-      [ div [ onClick (clickMsg item.id) ] [ text item.name ]
-      , div [] [ text ((toString placedCount) ++ " of " ++ (toString item.quantity) ++ " placed") ]
-      , div [] [ viewLevels (levelMsg item.id) option availableLevels ]
-      , div [] [ viewModes (modeMsg item.id) option item.modes ]
-      ]
+    div [ class style 
+        , onClick (clickMsg item.id)
+        ] 
+        [ div [] 
+              [ img [ src (itemImage item option)
+                    , alt item.name
+                    ] [] 
+              , text item.name 
+              ]
+        , div [] [ text ((toString placedCount) ++ " of " ++ (toString item.quantity) ++ " placed") ]
+        , div [] [ viewLevels (levelMsg item.id) option availableLevels ]
+        , div [] [ viewModes (modeMsg item.id) option item.modes ]
+        ]
+
+itemImage : PalletteItem -> Maybe PalletteOption -> String
+itemImage item option =
+  let 
+    id = 
+      if (String.startsWith "wall" item.id)
+      then "wall"
+      else item.id
+
+    level = 
+      option
+        |> Maybe.map (\o -> o.level)
+        |> Maybe.withDefault 1
+
+    mode =
+      option 
+        |> Maybe.andThen (\o -> o.mode)
+        |> Maybe.map (\m -> "-" ++ m)
+        |> Maybe.withDefault ""
+  in
+    "data/images/" ++ 
+    id ++ 
+    "/pallette/" ++ 
+    id ++ 
+    "-" ++ 
+    (toString level) ++ 
+    mode ++
+    ".png"      
 
 viewLevels : (String -> msg) -> Maybe PalletteOption -> List Level -> Html msg
 viewLevels msg opt levels =
