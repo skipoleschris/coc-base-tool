@@ -106,6 +106,64 @@ levelsList max maybeMin =
    in
      List.range min max |> List.reverse 
 
+updateOptionsFromConsumptions : List PalletteItem -> Consumptions -> PalletteOptions -> PalletteOptions
+updateOptionsFromConsumptions items consumptions options =
+  items
+    |> List.map (updateOptionsForItem consumptions options)
+    |> Dict.fromList
+
+updateOptionsForItem : Consumptions -> PalletteOptions -> PalletteItem -> (String, PalletteOption)
+updateOptionsForItem consumptions options item =
+  let
+    option = 
+      options
+        |> Dict.get item.id
+        |> Maybe.withDefault (itemToOption item)
+      
+    consumption =
+      Dict.get item.id consumptions
+  in
+    case consumption of
+      Nothing ->
+        (item.id, option)
+      Just c ->
+        (item.id, applyOptionUpdate item.modes c option)
+
+applyOptionUpdate : List Mode -> Consumption -> PalletteOption -> PalletteOption
+applyOptionUpdate modes consumption option = 
+  let
+    consumedModes =
+      modes 
+        |> List.filter (isModeConsumed consumption)
+        |> List.map (\m -> m.id)
+      
+    invalidMode = 
+      option.mode
+        |> Maybe.map (\m -> List.member m consumedModes)
+        |> Maybe.withDefault False
+
+    defaultMode =
+      modes
+        |> List.head
+        |> Maybe.map (\m -> m.id)
+  in
+      { option | 
+        disabledModes = consumedModes 
+      , mode = if invalidMode then defaultMode else option.mode 
+      }
+
+isModeConsumed : Consumption -> Mode -> Bool  
+isModeConsumed consumption mode =
+  let
+    numberPlaced =
+      consumption.modesUsed
+        |> Dict.get mode.id
+        |> Maybe.withDefault 0
+  in
+    mode.maxAllowed
+      |> Maybe.map (\max -> numberPlaced >= max)
+      |> Maybe.withDefault False
+      
 currentPalletteItem : Pallette -> Maybe PlacedItem
 currentPalletteItem pallette =
   Maybe.map (\id -> 
@@ -115,45 +173,27 @@ currentPalletteItem pallette =
     }
   ) pallette.selected 
 
-newConsumption : PlacedItem -> List Mode -> Consumption
-newConsumption item modes =
+newConsumption : PlacedItem -> Consumption
+newConsumption item =
   let
     modesUsed = item.mode 
                   |> Maybe.map (\mode -> (Dict.fromList [(mode, 1)])) 
                   |> Maybe.withDefault Dict.empty
-
-    modesDisabled = item.mode
-                      |> Maybe.map (\mode -> if (isModeConsumed mode 1 modes) then [mode] else [])
-                      |> Maybe.withDefault []
   in
     { numberPlaced = 1
     , modesUsed = modesUsed
-    , modesDisabled = modesDisabled
     }
 
-isModeConsumed : String -> Int -> List Mode -> Bool
-isModeConsumed mode numberPlaced modes = 
-  let
-    maxAllowed = modes
-                   |> List.filter (\m -> m.id == mode)
-                   |> List.head
-                   |> Maybe.andThen (\m -> m.maxAllowed)
-    
-  in
-    maxAllowed
-      |> Maybe.map (\max -> numberPlaced >= max)
-      |> Maybe.withDefault False
-
-updateConsumptionWithItem : PlacedItem -> List Mode -> Maybe Consumption -> Maybe Consumption
-updateConsumptionWithItem item modes consumption =
+updateConsumptionWithItem : PlacedItem -> Maybe Consumption -> Maybe Consumption
+updateConsumptionWithItem item consumption =
   case consumption of
     Nothing ->
-      Just (newConsumption item modes)
+      Just (newConsumption item)
     Just c ->
-      Just (applyAdditionalConsumption item modes c)
+      Just (applyAdditionalConsumption item c)
 
-applyAdditionalConsumption : PlacedItem -> List Mode -> Consumption -> Consumption
-applyAdditionalConsumption item modes consumption =
+applyAdditionalConsumption : PlacedItem -> Consumption -> Consumption
+applyAdditionalConsumption item consumption =
   let
     numberPlaced = 
       consumption.numberPlaced + 1
@@ -163,7 +203,6 @@ applyAdditionalConsumption item modes consumption =
   in
     { numberPlaced = numberPlaced
     , modesUsed = modesUsed
-    , modesDisabled = updateModesDisabled modesUsed modes
     }
 
 updateModesUsed : Maybe String -> Dict String Int -> Dict String Int
@@ -173,13 +212,6 @@ updateModesUsed mode used =
       used
     Just m ->
       Dict.update m incrementCount used
-
-updateModesDisabled : Dict String Int -> List Mode -> List String
-updateModesDisabled modesUsed modes = 
-  modesUsed 
-    |> Dict.toList
-    |> List.filter (\mode -> isModeConsumed (Tuple.first mode) (Tuple.second mode) modes)
-    |> List.map (\mode -> Tuple.first mode)
 
 incrementCount : Maybe Int -> Maybe Int
 incrementCount count = 
@@ -204,6 +236,7 @@ changeLevelSelection id level pallette =
   { pallette | 
       options = Dict.update id (Maybe.map (\o -> { o | level = level })) pallette.options
   }
+  --TODO: disable mode if level is not valid
 
 changeModeSelection : String -> String -> Pallette -> Pallette
 changeModeSelection id mode pallette =
@@ -213,22 +246,25 @@ changeModeSelection id mode pallette =
 
 refreshPallette : List PlacedItem -> Pallette -> Pallette
 refreshPallette placed pallette = 
-  { pallette | consumptions = placedItemsToConsumptions pallette.items placed }
-
-placedItemsToConsumptions : List PalletteItem -> List PlacedItem -> Consumptions
-placedItemsToConsumptions palletteItems items =
-  List.foldl (updateConsumption palletteItems) Dict.empty items
-
-updateConsumption : List PalletteItem -> PlacedItem -> Consumptions -> Consumptions
-updateConsumption palletteItems item consumptions =
   let
-    modes = palletteItems
-              |> List.filter (\i -> i.id == item.id)
-              |> List.head
-              |> Maybe.map (\i -> i.modes)
-              |> Maybe.withDefault []
-  in
-    Dict.update item.id (updateConsumptionWithItem item modes) consumptions
+    consumptions = 
+      placedItemsToConsumptions placed
+
+    options =
+      updateOptionsFromConsumptions pallette.items consumptions pallette.options
+  in   
+    { pallette | 
+      consumptions = consumptions
+    , options = options
+    }
+
+placedItemsToConsumptions : List PlacedItem -> Consumptions
+placedItemsToConsumptions items =
+  List.foldl updateConsumption Dict.empty items
+
+updateConsumption : PlacedItem -> Consumptions -> Consumptions
+updateConsumption item consumptions =
+    Dict.update item.id (updateConsumptionWithItem item) consumptions
 
 
 -- VIEW
@@ -326,5 +362,5 @@ isModeSelected mode option =
 isModeDisabled : Mode -> Maybe PalletteOption -> Bool
 isModeDisabled mode option = 
   option 
-    |> Maybe.map (\opt -> List.member mode.id opt.modesDisabled)
+    |> Maybe.map (\opt -> List.member mode.id opt.disabledModes)
     |> Maybe.withDefault False
