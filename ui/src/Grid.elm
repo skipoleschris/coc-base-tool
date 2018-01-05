@@ -138,9 +138,17 @@ makeCol msg grid row col =
           , ("background-position", itemImageOffset row col c)
           ]
         _                  -> 
-          [ ("background-image", "url('data/images/grass.png')") ]
+          case (isEven row, isEven col) of
+            (False, False) -> [ ("background-image", "url('data/images/grass.png')") ]
+            (False, True)  -> [ ("background-image", "url('data/images/mud.png')") ]
+            (True,  False) -> [ ("background-image", "url('data/images/mud.png')") ]
+            (True,  True)  -> [ ("background-image", "url('data/images/grass.png')") ]
   in
     div [ class "tile", style content, onClick (msg (row, col)) ] []
+
+
+isEven : Int -> Bool
+isEven i = i % 2 == 0
 
 itemImage : PlacedItem -> String
 itemImage item =
@@ -171,9 +179,9 @@ itemImageOffset row col coordinate =
       coordinate
 
     xpos = 
-      -10 * (col - refCol)
+      -15 * (col - refCol)
       
     ypos =
-      -10 * (row - refRow)
+      -15 * (row - refRow)
   in
     (toString xpos) ++ "px " ++ (toString ypos) ++ "px"
