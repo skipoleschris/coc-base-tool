@@ -4,6 +4,8 @@ module Grid exposing
   , defaultSize
   , makeGrid
   , tileSelected
+  , tileHover
+  , noTileHover
   , allPlacedItems
   , viewGrid
   )
@@ -11,7 +13,7 @@ module Grid exposing
 import Dict exposing (Dict)
 import Html exposing (..)
 import Html.Attributes exposing (class, style)
-import Html.Events exposing (onClick)
+import Html.Events exposing (onClick, onMouseOver, onMouseOut)
 
 import Pallette exposing (PlacedItem)
 
@@ -30,9 +32,15 @@ type TileContent = Empty | Item PlacedItem | Reference Coordinate PlacedItem
 
 type alias Grid = 
   { tiles : Dict Coordinate TileContent
+  , hoverState : HoverState
   , size : Dimension
   }
 
+type alias HoverState = 
+  { disabledHighight : List Coordinate
+  , deleteHighlight : List Coordinate
+  , placeHighlight : List Coordinate
+  }
 
 -- HELPER FUNCTIONS
 
@@ -46,7 +54,15 @@ makeGrid dimension =
   in
     { tiles = Dict.fromList tiles
     , size = dimension
+    , hoverState = emptyHoverState
     }
+
+emptyHoverState : HoverState
+emptyHoverState = 
+  { disabledHighight = []
+  , deleteHighlight = []
+  , placeHighlight = []
+  }
 
 allCoordinates : Dimension -> List Coordinate
 allCoordinates size =
@@ -67,9 +83,130 @@ colIndexes grid =
 
 -- UPDATE
 
+tileHover : Coordinate -> Grid -> Maybe PlacedItem -> Grid
+tileHover coordinate grid item =
+  let
+    newHoverState = 
+      grid.tiles
+        |> Dict.get coordinate
+        |> Maybe.map (\tile ->
+            case tile of
+              Empty         ->
+                case item of
+                  Nothing ->
+                    { disabledHighight = [ coordinate ]
+                    , deleteHighlight = [] 
+                    , placeHighlight = []
+                    }
+                  Just i ->
+                    if canPlaceItem coordinate grid i
+                    then
+                      { disabledHighight = []
+                      , deleteHighlight = [] 
+                      , placeHighlight = coordinatesFor coordinate i.size
+                      }
+                    else
+                      { disabledHighight = coordinatesFor coordinate i.size 
+                      , deleteHighlight = [] 
+                      , placeHighlight = []
+                      }
+              Item i        ->
+                { disabledHighight = []
+                , deleteHighlight = coordinatesFor coordinate i.size
+                , placeHighlight = []
+                }
+              Reference c i ->
+                { disabledHighight = []
+                , deleteHighlight = coordinatesFor c i.size
+                , placeHighlight = []
+                }
+          )
+        |> Maybe.withDefault grid.hoverState
+  in 
+    { grid | hoverState = newHoverState }
+
+coordinatesFor : Coordinate -> Dimension -> List Coordinate
+coordinatesFor coordinate size =
+  let
+    (top, left) = coordinate
+    rows = List.range top (top + size.height - 1)
+    cols = List.range left (left + size.width - 1)
+  in
+    rows 
+      |> List.map (\row ->
+          cols
+            |> List.map (\col -> (row, col))
+        )
+      |> List.concat
+      
+noTileHover : Grid -> Grid
+noTileHover grid =
+  { grid | hoverState = emptyHoverState }
+
 tileSelected : Coordinate -> Grid -> Maybe PlacedItem -> Grid
 tileSelected coordinate grid item =
   let
+    actionedGrid =
+      if isPopulated coordinate grid
+      then removeItem coordinate grid
+      else placeItem coordinate grid item
+  in
+    tileHover coordinate actionedGrid item      
+
+isPopulated : Coordinate -> Grid -> Bool
+isPopulated coordinate grid =
+  grid.tiles
+    |> Dict.get coordinate
+    |> Maybe.map (\t -> t /= Empty)
+    |> Maybe.withDefault False
+
+removeItem : Coordinate -> Grid -> Grid
+removeItem coordinate grid =
+  let
+    removeCriteria =
+      grid.tiles
+        |> Dict.get coordinate
+        |> Maybe.map (\t ->
+            case t of
+              Item i -> (coordinate, i.size)
+              Reference c i -> (c, i.size)
+              Empty -> (coordinate, { width = 1, height = 1 })
+          )
+
+    newTiles =
+      removeCriteria
+        |> Maybe.map (emptyTilesForCriteria)
+        |> Maybe.withDefault []
+
+    updatedTiles = 
+      newTiles
+        |> List.foldl (\(coord, tile) tiles -> Dict.insert coord tile tiles) grid.tiles
+  in
+    { grid | tiles = updatedTiles }        
+
+emptyTilesForCriteria : (Coordinate, Dimension) -> List (Coordinate, TileContent)
+emptyTilesForCriteria (coordinate, size) =
+  let
+    (top, left) = coordinate
+    rows = List.range top (top + size.height - 1)
+    cols = List.range left (left + size.width - 1)
+  in
+    rows 
+      |> List.map (\row ->
+          cols
+            |> List.map (\col -> ((row, col), Empty))
+        )
+      |> List.concat
+
+
+placeItem : Coordinate -> Grid -> Maybe PlacedItem -> Grid
+placeItem coordinate grid item =
+  let
+    canPlace =
+      item 
+        |> Maybe.map (canPlaceItem coordinate grid)
+        |> Maybe.withDefault False
+
     newTiles = 
       item 
         |> Maybe.map (createTilesForItem coordinate)
@@ -79,7 +216,28 @@ tileSelected coordinate grid item =
       newTiles
         |> List.foldl (\(coord, tile) tiles -> Dict.insert coord tile tiles) grid.tiles
   in
-    { grid | tiles = updatedTiles }
+    if canPlace
+    then { grid | tiles = updatedTiles }
+    else grid
+
+canPlaceItem : Coordinate -> Grid -> PlacedItem -> Bool
+canPlaceItem coordinate grid item =
+  let
+    (top, left) = coordinate
+    rows = List.range top (top + item.size.height - 1)
+    cols = List.range left (left + item.size.width - 1)
+  in
+    rows 
+      |> List.map (\row ->
+          cols
+            |> List.map (\col ->
+              Dict.get (row, col) grid.tiles
+                |> Maybe.map (\t -> t == Empty)
+                |> Maybe.withDefault False
+              )
+        )
+      |> List.concat
+      |> List.all identity
 
 createTilesForItem : Coordinate -> PlacedItem -> List (Coordinate, TileContent)
 createTilesForItem coordinate item =
@@ -116,35 +274,52 @@ allPlacedItems grid =
 
 -- VIEW
 
-viewGrid : (Coordinate -> msg) -> Grid -> Html msg
-viewGrid msg grid =
-  div [ class "map" ] (List.map (makeRow msg grid) (rowIndexes grid))
+viewGrid : (Coordinate -> msg) -> (Coordinate -> msg) -> msg -> Grid -> Html msg
+viewGrid clickMsg hoverMsg noHoverMsg grid =
+  div [ class "map" 
+      , onMouseOut noHoverMsg
+      ] (List.map (makeRow clickMsg hoverMsg grid) (rowIndexes grid))
 
-makeRow : (Coordinate -> msg) -> Grid -> Row -> Html msg
-makeRow msg grid row =
-  div [ class "row" ] (List.map (makeCol msg grid row) (colIndexes grid))
+makeRow : (Coordinate -> msg) -> (Coordinate -> msg) -> Grid -> Row -> Html msg
+makeRow clickMsg hoverMsg grid row =
+  div [ class "row" ] (List.map (makeCol clickMsg hoverMsg grid row) (colIndexes grid))
 
-makeCol : (Coordinate -> msg) -> Grid -> Row -> Column -> Html msg
-makeCol msg grid row col =
+makeCol : (Coordinate -> msg) -> (Coordinate -> msg) -> Grid -> Row -> Column -> Html msg
+makeCol clickMsg hoverMsg grid row col =
   let
     tile = Dict.get (row, col) grid.tiles
 
     content =
       case tile of
-        Just (Item i)      -> 
+        Just (Item i)        -> 
           [ ("background-image", "url('" ++ itemImage i ++ "')") ]
         Just (Reference c i) -> 
           [ ("background-image", "url('" ++ itemImage i ++ "')") 
           , ("background-position", itemImageOffset row col c)
           ]
-        _                  -> 
+        _                    -> 
           case (isEven row, isEven col) of
             (False, False) -> [ ("background-image", "url('data/images/grass.png')") ]
             (False, True)  -> [ ("background-image", "url('data/images/mud.png')") ]
             (True,  False) -> [ ("background-image", "url('data/images/mud.png')") ]
             (True,  True)  -> [ ("background-image", "url('data/images/grass.png')") ]
+
+    hovered =
+      if List.member (row, col) grid.hoverState.disabledHighight
+      then [ ("box-shadow", "inset 0 0 0 15px rgba(255, 0, 0, 0.4") ]
+      else
+        if List.member (row, col) grid.hoverState.deleteHighlight
+        then [ ("box-shadow", "inset 0 0 0 15px rgba(255, 127, 0, 0.4") ]
+        else
+          if List.member (row, col) grid.hoverState.placeHighlight
+          then [ ("box-shadow", "inset 0 0 0 15px rgba(0, 0, 255, 0.4") ]
+          else []
   in
-    div [ class "tile", style content, onClick (msg (row, col)) ] []
+    div [ class "tile"
+        , style (hovered ++ content)
+        , onClick (clickMsg (row, col)) 
+        , onMouseOver (hoverMsg (row, col))
+        ] []
 
 
 isEven : Int -> Bool

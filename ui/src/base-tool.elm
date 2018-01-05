@@ -46,6 +46,8 @@ type Msg = ChangeTownHallLevel String
          | PalletteLevelChange String String
          | PalletteModeChange String String
          | TileClicked Coordinate
+         | TileHover Coordinate
+         | RemoveTileHover
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
@@ -64,6 +66,7 @@ update msg model =
       ( { model | 
           definition = Just definition 
         , pallette = freshPallette definition
+        , grid = makeGrid defaultSize
         }
       , Cmd.none
       )
@@ -101,6 +104,16 @@ update msg model =
       , Cmd.none
       )
 
+    TileHover coordinate ->
+      ( hoverOverTile coordinate model
+      , Cmd.none
+      )
+
+    RemoveTileHover ->
+      ( { model | grid = noTileHover model.grid }
+      , Cmd.none
+      )
+
 updateSelectedTile : Coordinate -> Model -> Model
 updateSelectedTile coordinate model =
   let
@@ -109,16 +122,23 @@ updateSelectedTile coordinate model =
     newPallette = refreshPallette placedItems model.pallette
   in
     { model | grid = newGrid, pallette = newPallette }
-      
+
+hoverOverTile : Coordinate -> Model -> Model
+hoverOverTile coordinate model =     
+  let
+    newGrid = tileHover coordinate model.grid (currentPalletteItem model.pallette)
+  in
+    { model | grid = newGrid }
+
 
 -- VIEW
 
 view : Model -> Html Msg
 view model =
   div [] 
-    [ Html.node "link" [ rel "stylesheet", href "dev-styles.css" ] []
+    [ Html.node "link" [ rel "stylesheet", href "styles.css" ] []
     , townHallLevelSelect ChangeTownHallLevel model.townHallLevels
-    , viewGrid TileClicked model.grid
+    , viewGrid TileClicked TileHover RemoveTileHover model.grid
     , viewPallette PalletteItemSelected PalletteLevelChange PalletteModeChange model.pallette
     ]
 
@@ -134,3 +154,10 @@ subscriptions model = Sub.none
 init : (Model, Cmd Msg)
 init = (model, Cmd.none)
 
+
+
+-- TODO LIST
+-- Clear all button to reinitialise grid
+-- Export layout
+-- Import layout
+-- Rollover of grid element to show placement of item
