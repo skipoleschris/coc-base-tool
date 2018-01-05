@@ -160,4 +160,4 @@ init = (model, Cmd.none)
 -- Clear all button to reinitialise grid
 -- Export layout
 -- Import layout
--- Rollover of grid element to show placement of item
+-- Code refactoring & clean up
