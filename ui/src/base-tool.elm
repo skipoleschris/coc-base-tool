@@ -5,6 +5,7 @@ import Http exposing (Error)
 import TownHallDefinitions exposing (Level, TownHallDefinition, loadTownHallDefinition, townHallLevelSelect)
 import Pallette exposing (..)
 import Grid exposing (..)
+import Toolbar exposing (..)
 
 main = 
   Html.program 
@@ -48,6 +49,7 @@ type Msg = ChangeTownHallLevel String
          | TileClicked Coordinate
          | TileHover Coordinate
          | RemoveTileHover
+         | ClearLayout
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
@@ -114,14 +116,20 @@ update msg model =
       , Cmd.none
       )
 
+    ClearLayout ->
+      ( clearLayout model
+      , Cmd.none
+      )
+
 updateSelectedTile : Coordinate -> Model -> Model
 updateSelectedTile coordinate model =
   let
     newGrid = tileSelected coordinate model.grid (currentPalletteItem model.pallette)
     placedItems = allPlacedItems newGrid
     newPallette = refreshPallette placedItems model.pallette
+    finalGrid = tileHover coordinate newGrid (currentPalletteItem newPallette)
   in
-    { model | grid = newGrid, pallette = newPallette }
+    { model | grid = finalGrid, pallette = newPallette }
 
 hoverOverTile : Coordinate -> Model -> Model
 hoverOverTile coordinate model =     
@@ -130,6 +138,16 @@ hoverOverTile coordinate model =
   in
     { model | grid = newGrid }
 
+clearLayout : Model -> Model
+clearLayout model =
+  case model.definition of
+    Nothing ->
+      { model | grid = makeGrid defaultSize }
+    Just definition ->
+      { model |
+        pallette = freshPallette definition 
+      , grid = makeGrid defaultSize 
+      }
 
 -- VIEW
 
@@ -140,6 +158,7 @@ view model =
     , townHallLevelSelect ChangeTownHallLevel model.townHallLevels
     , viewGrid TileClicked TileHover RemoveTileHover model.grid
     , viewPallette PalletteItemSelected PalletteLevelChange PalletteModeChange model.pallette
+    , viewToolbar ClearLayout
     ]
 
 
@@ -157,7 +176,6 @@ init = (model, Cmd.none)
 
 
 -- TODO LIST
--- Clear all button to reinitialise grid
 -- Export layout
 -- Import layout
 -- Code refactoring & clean up

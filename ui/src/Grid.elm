@@ -309,7 +309,7 @@ makeCol clickMsg hoverMsg grid row col =
       then [ ("box-shadow", "inset 0 0 0 15px rgba(255, 0, 0, 0.4") ]
       else
         if List.member (row, col) grid.hoverState.deleteHighlight
-        then [ ("box-shadow", "inset 0 0 0 15px rgba(255, 127, 0, 0.4") ]
+        then [ ("box-shadow", "inset 0 0 0 15px rgba(255, 127, 0, 0.6") ]
         else
           if List.member (row, col) grid.hoverState.placeHighlight
           then [ ("box-shadow", "inset 0 0 0 15px rgba(0, 0, 255, 0.4") ]

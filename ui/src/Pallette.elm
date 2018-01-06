@@ -310,10 +310,25 @@ refreshPallette placed pallette =
 
     options =
       updateOptionsFromConsumptions pallette.items consumptions pallette.options
+
+    selected =
+      case pallette.selected of
+        Nothing -> 
+          Nothing
+        Just id ->
+          pallette.items          
+            |> List.filter (\i -> i.id == id)
+            |> List.head
+            |> Maybe.andThen (\i -> 
+                if isNotConsumed consumptions i
+                then Just id
+                else Nothing
+              )
   in   
     { pallette | 
       consumptions = consumptions
     , options = options
+    , selected = selected
     }
 
 placedItemsToConsumptions : List PlacedItem -> Consumptions

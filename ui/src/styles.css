@@ -76,3 +76,23 @@ body {
 .selected {
   background-color: #CCCCCC;
 }
+
+
+.toolbar {
+  position: absolute;
+  top: 50px;
+  left: 920px;
+  width: 100px;
+  border: 1px solid black;
+  padding: 5px;
+}
+
+.tool-heading {
+  font-weight: bold;
+  padding: 2px;
+}
+
+.tool {
+  padding: 2px;
+}
+
