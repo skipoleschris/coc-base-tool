@@ -154,8 +154,7 @@ clearLayout model =
 view : Model -> Html Msg
 view model =
   div [] 
-    [ Html.node "link" [ rel "stylesheet", href "styles.css" ] []
-    , townHallLevelSelect ChangeTownHallLevel model.townHallLevels
+    [ townHallLevelSelect ChangeTownHallLevel model.townHallLevels
     , viewGrid TileClicked TileHover RemoveTileHover model.grid
     , viewPallette PalletteItemSelected PalletteLevelChange PalletteModeChange model.pallette
     , viewToolbar ClearLayout
