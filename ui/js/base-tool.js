@@ -9113,6 +9113,15 @@ var _elm_lang$http$Http$StringPart = F2(
 	});
 var _elm_lang$http$Http$stringPart = _elm_lang$http$Http$StringPart;
 
+var _user$project$Common$Dimension = F2(
+	function (a, b) {
+		return {width: a, height: b};
+	});
+var _user$project$Common$Size = F2(
+	function (a, b) {
+		return {width: a, height: b};
+	});
+
 var _user$project$TownHallDefinitions$townHallLevelSelect = F2(
 	function (msg, levels) {
 		var optionize = function (x) {
@@ -9181,18 +9190,6 @@ var _user$project$TownHallDefinitions$townHallLevelSelect = F2(
 				_1: {ctor: '[]'}
 			});
 	});
-var _user$project$TownHallDefinitions$TownHallDefinition = F8(
-	function (a, b, c, d, e, f, g, h) {
-		return {level: a, defences: b, army: c, resources: d, traps: e, troops: f, spells: g, walls: h};
-	});
-var _user$project$TownHallDefinitions$AllowedBuilding = F7(
-	function (a, b, c, d, e, f, g) {
-		return {id: a, name: b, quantity: c, maxLevel: d, minLevel: e, size: f, modes: g};
-	});
-var _user$project$TownHallDefinitions$Size = F2(
-	function (a, b) {
-		return {width: a, height: b};
-	});
 var _user$project$TownHallDefinitions$sizeDecoder = A3(
 	_NoRedInk$elm_decode_pipeline$Json_Decode_Pipeline$required,
 	'height',
@@ -9201,7 +9198,15 @@ var _user$project$TownHallDefinitions$sizeDecoder = A3(
 		_NoRedInk$elm_decode_pipeline$Json_Decode_Pipeline$required,
 		'width',
 		_elm_lang$core$Json_Decode$int,
-		_NoRedInk$elm_decode_pipeline$Json_Decode_Pipeline$decode(_user$project$TownHallDefinitions$Size)));
+		_NoRedInk$elm_decode_pipeline$Json_Decode_Pipeline$decode(_user$project$Common$Size)));
+var _user$project$TownHallDefinitions$TownHallDefinition = F8(
+	function (a, b, c, d, e, f, g, h) {
+		return {level: a, defences: b, army: c, resources: d, traps: e, troops: f, spells: g, walls: h};
+	});
+var _user$project$TownHallDefinitions$AllowedBuilding = F7(
+	function (a, b, c, d, e, f, g) {
+		return {id: a, name: b, quantity: c, maxLevel: d, minLevel: e, size: f, modes: g};
+	});
 var _user$project$TownHallDefinitions$Mode = F4(
 	function (a, b, c, d) {
 		return {id: a, name: b, maxAllowed: c, minLevel: d};
@@ -10089,7 +10094,7 @@ var _user$project$Pallette$wallsToPalletteItem = function (w) {
 		quantity: w.quantity,
 		maxLevel: w.maxLevel,
 		minLevel: _elm_lang$core$Maybe$Nothing,
-		size: A2(_user$project$TownHallDefinitions$Size, 1, 1),
+		size: A2(_user$project$Common$Size, 1, 1),
 		modes: {ctor: '[]'}
 	};
 };
@@ -10146,6 +10151,152 @@ var _user$project$Pallette$PlacedItem = F4(
 	function (a, b, c, d) {
 		return {id: a, level: b, mode: c, size: d};
 	});
+
+var _user$project$LayoutDefinitions$itemToObject = function (item) {
+	var mode = A2(
+		_elm_lang$core$Maybe$withDefault,
+		{ctor: '[]'},
+		A2(
+			_elm_lang$core$Maybe$map,
+			function (mode) {
+				return {
+					ctor: '::',
+					_0: {
+						ctor: '_Tuple2',
+						_0: 'mode',
+						_1: _elm_lang$core$Json_Encode$string(mode)
+					},
+					_1: {ctor: '[]'}
+				};
+			},
+			item.mode));
+	var positionObj = _elm_lang$core$Json_Encode$object(
+		{
+			ctor: '::',
+			_0: {
+				ctor: '_Tuple2',
+				_0: 'row',
+				_1: _elm_lang$core$Json_Encode$int(item.position.row)
+			},
+			_1: {
+				ctor: '::',
+				_0: {
+					ctor: '_Tuple2',
+					_0: 'column',
+					_1: _elm_lang$core$Json_Encode$int(item.position.column)
+				},
+				_1: {ctor: '[]'}
+			}
+		});
+	return _elm_lang$core$Json_Encode$object(
+		A2(
+			_elm_lang$core$Basics_ops['++'],
+			{
+				ctor: '::',
+				_0: {ctor: '_Tuple2', _0: 'position', _1: positionObj},
+				_1: {
+					ctor: '::',
+					_0: {
+						ctor: '_Tuple2',
+						_0: 'building',
+						_1: _elm_lang$core$Json_Encode$string(item.item)
+					},
+					_1: {
+						ctor: '::',
+						_0: {
+							ctor: '_Tuple2',
+							_0: 'level',
+							_1: _elm_lang$core$Json_Encode$int(item.level)
+						},
+						_1: {ctor: '[]'}
+					}
+				}
+			},
+			mode));
+};
+var _user$project$LayoutDefinitions$encodeToJson = F3(
+	function (layoutName, thLevel, items) {
+		var exportItems = _elm_lang$core$Json_Encode$list(
+			A2(_elm_lang$core$List$map, _user$project$LayoutDefinitions$itemToObject, items));
+		var exportJson = _elm_lang$core$Json_Encode$object(
+			{
+				ctor: '::',
+				_0: {
+					ctor: '_Tuple2',
+					_0: 'layoutName',
+					_1: _elm_lang$core$Json_Encode$string(layoutName)
+				},
+				_1: {
+					ctor: '::',
+					_0: {
+						ctor: '_Tuple2',
+						_0: 'townHallLevel',
+						_1: _elm_lang$core$Json_Encode$int(thLevel)
+					},
+					_1: {
+						ctor: '::',
+						_0: {ctor: '_Tuple2', _0: 'items', _1: exportItems},
+						_1: {ctor: '[]'}
+					}
+				}
+			});
+		return A2(_elm_lang$core$Json_Encode$encode, 0, exportJson);
+	});
+var _user$project$LayoutDefinitions$Position = F2(
+	function (a, b) {
+		return {row: a, column: b};
+	});
+var _user$project$LayoutDefinitions$positionDecoder = A3(
+	_NoRedInk$elm_decode_pipeline$Json_Decode_Pipeline$required,
+	'column',
+	_elm_lang$core$Json_Decode$int,
+	A3(
+		_NoRedInk$elm_decode_pipeline$Json_Decode_Pipeline$required,
+		'row',
+		_elm_lang$core$Json_Decode$int,
+		_NoRedInk$elm_decode_pipeline$Json_Decode_Pipeline$decode(_user$project$LayoutDefinitions$Position)));
+var _user$project$LayoutDefinitions$LayoutItem = F4(
+	function (a, b, c, d) {
+		return {position: a, item: b, level: c, mode: d};
+	});
+var _user$project$LayoutDefinitions$layoutItemDecoder = A4(
+	_NoRedInk$elm_decode_pipeline$Json_Decode_Pipeline$optional,
+	'mode',
+	_elm_lang$core$Json_Decode$nullable(_elm_lang$core$Json_Decode$string),
+	_elm_lang$core$Maybe$Nothing,
+	A3(
+		_NoRedInk$elm_decode_pipeline$Json_Decode_Pipeline$required,
+		'level',
+		_elm_lang$core$Json_Decode$int,
+		A3(
+			_NoRedInk$elm_decode_pipeline$Json_Decode_Pipeline$required,
+			'item',
+			_elm_lang$core$Json_Decode$string,
+			A3(
+				_NoRedInk$elm_decode_pipeline$Json_Decode_Pipeline$required,
+				'position',
+				_user$project$LayoutDefinitions$positionDecoder,
+				_NoRedInk$elm_decode_pipeline$Json_Decode_Pipeline$decode(_user$project$LayoutDefinitions$LayoutItem)))));
+var _user$project$LayoutDefinitions$LayoutDefinition = F3(
+	function (a, b, c) {
+		return {layoutName: a, townHallLevel: b, items: c};
+	});
+var _user$project$LayoutDefinitions$layoutDefinitionDecoder = A3(
+	_NoRedInk$elm_decode_pipeline$Json_Decode_Pipeline$required,
+	'items',
+	_elm_lang$core$Json_Decode$list(_user$project$LayoutDefinitions$layoutItemDecoder),
+	A3(
+		_NoRedInk$elm_decode_pipeline$Json_Decode_Pipeline$required,
+		'townHallLevel',
+		_elm_lang$core$Json_Decode$int,
+		A3(
+			_NoRedInk$elm_decode_pipeline$Json_Decode_Pipeline$required,
+			'layoutName',
+			_elm_lang$core$Json_Decode$string,
+			_NoRedInk$elm_decode_pipeline$Json_Decode_Pipeline$decode(_user$project$LayoutDefinitions$LayoutDefinition))));
+var _user$project$LayoutDefinitions$decodeFromJson = function (json) {
+	return A2(_elm_lang$core$Json_Decode$decodeString, _user$project$LayoutDefinitions$layoutDefinitionDecoder, json);
+};
 
 var _user$project$Grid$itemImageOffset = F3(
 	function (row, col, coordinate) {
@@ -10402,7 +10553,12 @@ var _user$project$Grid$layoutItems = function (grid) {
 					return {
 						ctor: '::',
 						_0: {
-							position: _elm_lang$core$Tuple$first(item),
+							position: {
+								row: _elm_lang$core$Tuple$first(
+									_elm_lang$core$Tuple$first(item)),
+								column: _elm_lang$core$Tuple$second(
+									_elm_lang$core$Tuple$first(item))
+							},
 							item: _p7.id,
 							level: _p7.level,
 							mode: _p7.mode
@@ -10482,10 +10638,6 @@ var _user$project$Grid$noTileHover = function (grid) {
 		{hoverState: _user$project$Grid$emptyHoverState});
 };
 var _user$project$Grid$defaultSize = {width: 44, height: 44};
-var _user$project$Grid$Dimension = F2(
-	function (a, b) {
-		return {width: a, height: b};
-	});
 var _user$project$Grid$Grid = F3(
 	function (a, b, c) {
 		return {tiles: a, hoverState: b, size: c};
@@ -10493,10 +10645,6 @@ var _user$project$Grid$Grid = F3(
 var _user$project$Grid$HoverState = F3(
 	function (a, b, c) {
 		return {disabledHighight: a, deleteHighlight: b, placeHighlight: c};
-	});
-var _user$project$Grid$LayoutItem = F4(
-	function (a, b, c, d) {
-		return {position: a, item: b, level: c, mode: d};
 	});
 var _user$project$Grid$Reference = F2(
 	function (a, b) {
@@ -10743,91 +10891,6 @@ var _user$project$Grid$tileSelected = F3(
 		return A3(_user$project$Grid$tileHover, coordinate, actionedGrid, item);
 	});
 
-var _user$project$ImportExport$itemToObject = function (item) {
-	var mode = A2(
-		_elm_lang$core$Maybe$withDefault,
-		{ctor: '[]'},
-		A2(
-			_elm_lang$core$Maybe$map,
-			function (mode) {
-				return {
-					ctor: '::',
-					_0: {
-						ctor: '_Tuple2',
-						_0: 'mode',
-						_1: _elm_lang$core$Json_Encode$string(mode)
-					},
-					_1: {ctor: '[]'}
-				};
-			},
-			item.mode));
-	var _p0 = item.position;
-	var row = _p0._0;
-	var column = _p0._1;
-	var positionObj = _elm_lang$core$Json_Encode$object(
-		{
-			ctor: '::',
-			_0: {
-				ctor: '_Tuple2',
-				_0: 'row',
-				_1: _elm_lang$core$Json_Encode$int(row)
-			},
-			_1: {
-				ctor: '::',
-				_0: {
-					ctor: '_Tuple2',
-					_0: 'column',
-					_1: _elm_lang$core$Json_Encode$int(column)
-				},
-				_1: {ctor: '[]'}
-			}
-		});
-	return _elm_lang$core$Json_Encode$object(
-		A2(
-			_elm_lang$core$Basics_ops['++'],
-			{
-				ctor: '::',
-				_0: {ctor: '_Tuple2', _0: 'position', _1: positionObj},
-				_1: {
-					ctor: '::',
-					_0: {
-						ctor: '_Tuple2',
-						_0: 'building',
-						_1: _elm_lang$core$Json_Encode$string(item.item)
-					},
-					_1: {
-						ctor: '::',
-						_0: {
-							ctor: '_Tuple2',
-							_0: 'level',
-							_1: _elm_lang$core$Json_Encode$int(item.level)
-						},
-						_1: {ctor: '[]'}
-					}
-				}
-			},
-			mode));
-};
-var _user$project$ImportExport$buildExportJson = F2(
-	function (thLevel, items) {
-		var exportItems = _elm_lang$core$Json_Encode$list(
-			A2(_elm_lang$core$List$map, _user$project$ImportExport$itemToObject, items));
-		var exportJson = _elm_lang$core$Json_Encode$object(
-			{
-				ctor: '::',
-				_0: {
-					ctor: '_Tuple2',
-					_0: 'townHallLevel',
-					_1: _elm_lang$core$Json_Encode$int(thLevel)
-				},
-				_1: {
-					ctor: '::',
-					_0: {ctor: '_Tuple2', _0: 'items', _1: exportItems},
-					_1: {ctor: '[]'}
-				}
-			});
-		return A2(_elm_lang$core$Json_Encode$encode, 0, exportJson);
-	});
 var _user$project$ImportExport$export = _elm_lang$core$Native_Platform.outgoingPort(
 	'export',
 	function (v) {
@@ -10952,6 +11015,7 @@ var _user$project$Toolbar$viewToolbar = F3(
 
 var _user$project$Main$exportLayout = function (model) {
 	var filename = A2(_elm_lang$core$Maybe$withDefault, 'layout.json', model.layoutName);
+	var layoutName = A2(_elm_lang$core$Maybe$withDefault, '', model.layoutName);
 	var data = A2(
 		_elm_lang$core$Maybe$map,
 		function (json) {
@@ -10963,8 +11027,9 @@ var _user$project$Main$exportLayout = function (model) {
 		A2(
 			_elm_lang$core$Maybe$map,
 			function (thLevel) {
-				return A2(
-					_user$project$ImportExport$buildExportJson,
+				return A3(
+					_user$project$LayoutDefinitions$encodeToJson,
+					layoutName,
 					thLevel,
 					_user$project$Grid$layoutItems(model.grid));
 			},
@@ -11157,28 +11222,17 @@ var _user$project$Main$importDialog = function (model) {
 					ctor: '::',
 					_0: A2(
 						_elm_lang$html$Html$button,
-						{ctor: '[]'},
 						{
 							ctor: '::',
-							_0: _elm_lang$html$Html$text('Import'),
+							_0: _elm_lang$html$Html_Events$onClick(_user$project$Main$CancelImport),
+							_1: {ctor: '[]'}
+						},
+						{
+							ctor: '::',
+							_0: _elm_lang$html$Html$text('Cancel'),
 							_1: {ctor: '[]'}
 						}),
-					_1: {
-						ctor: '::',
-						_0: A2(
-							_elm_lang$html$Html$button,
-							{
-								ctor: '::',
-								_0: _elm_lang$html$Html_Events$onClick(_user$project$Main$CancelImport),
-								_1: {ctor: '[]'}
-							},
-							{
-								ctor: '::',
-								_0: _elm_lang$html$Html$text('Cancel'),
-								_1: {ctor: '[]'}
-							}),
-						_1: {ctor: '[]'}
-					}
+					_1: {ctor: '[]'}
 				}
 			}
 		});

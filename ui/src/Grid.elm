@@ -1,7 +1,5 @@
 module Grid exposing
-  ( Coordinate
-  , Grid
-  , LayoutItem
+  ( Grid
   , defaultSize
   , makeGrid
   , layoutItems
@@ -17,19 +15,11 @@ import Html exposing (..)
 import Html.Attributes exposing (class, style)
 import Html.Events exposing (onClick, onMouseOver, onMouseOut)
 
-import TownHallDefinitions exposing (Level)
+import Common exposing (..)
 import Pallette exposing (PlacedItem)
+import LayoutDefinitions exposing (..)
 
 -- TYPES
-
-type alias Dimension = 
-  { width : Int
-  , height : Int
-  }
-
-type alias Row = Int
-type alias Column = Int
-type alias Coordinate = (Row, Column)
 
 type TileContent = Empty | Item PlacedItem | Reference Coordinate PlacedItem
 
@@ -43,13 +33,6 @@ type alias HoverState =
   { disabledHighight : List Coordinate
   , deleteHighlight : List Coordinate
   , placeHighlight : List Coordinate
-  }
-
-type alias LayoutItem =
-  { position : Coordinate
-  , item : String
-  , level : Level
-  , mode : Maybe String
   }
 
 -- HELPER FUNCTIONS
@@ -99,7 +82,7 @@ layoutItems grid =
         |> List.foldl (\item result -> 
             case (Tuple.second item) of
               Item i -> 
-                { position = (Tuple.first item)
+                { position = { row = Tuple.first (Tuple.first item), column = Tuple.second (Tuple.first item) }
                 , item = i.id
                 , level = i.level
                 , mode = i.mode

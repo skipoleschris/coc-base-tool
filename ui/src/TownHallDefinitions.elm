@@ -1,8 +1,6 @@
 module TownHallDefinitions exposing 
-  ( Level
-  , TownHallDefinition
+  ( TownHallDefinition
   , AllowedBuilding
-  , Size
   , Mode
   , Walls
   , loadTownHallDefinition
@@ -18,6 +16,7 @@ import Html exposing (..)
 import Html.Attributes exposing (value, disabled, selected, class)
 import Html.Events exposing (onInput)
 
+import Common exposing (Level, Size)
 
 -- TYPES
 
@@ -32,7 +31,6 @@ type alias TownHallDefinition =
   , walls : List Walls
   }
 
-type alias Level = Int
 
 type alias AllowedBuilding =
   { id : String
@@ -42,11 +40,6 @@ type alias AllowedBuilding =
   , minLevel : Maybe Level
   , size : Size 
   , modes : List Mode
-  }
-
-type alias Size =
-  { width : Int
-  , height : Int
   }
 
 type alias Mode =

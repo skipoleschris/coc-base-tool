@@ -16,6 +16,7 @@ import Html exposing (..)
 import Html.Attributes exposing (class, value, disabled, selected, src, alt)
 import Html.Events exposing (onInput, onClick)
 
+import Common exposing (..)
 import TownHallDefinitions exposing (..)
 
 

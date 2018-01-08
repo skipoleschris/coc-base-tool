@@ -3,10 +3,12 @@ import Html.Attributes exposing (rel, href, class, size, placeholder, id)
 import Html.Events exposing (onInput, onClick)
 import Http exposing (Error)
 
-import TownHallDefinitions exposing (Level, TownHallDefinition, loadTownHallDefinition, townHallLevelSelect)
+import Common exposing (..)
+import TownHallDefinitions exposing (TownHallDefinition, loadTownHallDefinition, townHallLevelSelect)
 import Pallette exposing (..)
 import Grid exposing (..)
 import Toolbar exposing (..)
+import LayoutDefinitions exposing(..)
 import ImportExport exposing (..)
 
 main = 
@@ -187,13 +189,17 @@ clearLayout model =
 exportLayout : Model -> Cmd msg
 exportLayout model =
   let
+    layoutName =
+      model.layoutName
+        |> Maybe.withDefault ""
+
     filename =
       model.layoutName
         |> Maybe.withDefault "layout.json"
 
     data =
       model.townHallLevel
-        |> Maybe.map (\thLevel -> buildExportJson thLevel (layoutItems model.grid))
+        |> Maybe.map (\thLevel -> encodeToJson layoutName thLevel (layoutItems model.grid))
         |> Maybe.map (\json -> filename ++ "|" ++ json)
   in
     data
