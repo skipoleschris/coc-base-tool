@@ -1,8 +1,10 @@
 module Grid exposing
   ( Coordinate
   , Grid
+  , LayoutItem
   , defaultSize
   , makeGrid
+  , layoutItems
   , tileSelected
   , tileHover
   , noTileHover
@@ -15,6 +17,7 @@ import Html exposing (..)
 import Html.Attributes exposing (class, style)
 import Html.Events exposing (onClick, onMouseOver, onMouseOut)
 
+import TownHallDefinitions exposing (Level)
 import Pallette exposing (PlacedItem)
 
 -- TYPES
@@ -40,6 +43,13 @@ type alias HoverState =
   { disabledHighight : List Coordinate
   , deleteHighlight : List Coordinate
   , placeHighlight : List Coordinate
+  }
+
+type alias LayoutItem =
+  { position : Coordinate
+  , item : String
+  , level : Level
+  , mode : Maybe String
   }
 
 -- HELPER FUNCTIONS
@@ -80,6 +90,25 @@ colIndexes : Grid -> List Column
 colIndexes grid =
   List.range 1 grid.size.width
 
+layoutItems : Grid -> List LayoutItem
+layoutItems grid =
+  let
+    items =
+      grid.tiles
+        |> Dict.toList
+        |> List.foldl (\item result -> 
+            case (Tuple.second item) of
+              Item i -> 
+                { position = (Tuple.first item)
+                , item = i.id
+                , level = i.level
+                , mode = i.mode
+                } :: result
+              _      -> 
+                result
+          ) []
+  in
+    items      
 
 -- UPDATE
 

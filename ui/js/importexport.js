@@ -1,11 +1,10 @@
 
-function downloadAsJson(obj, filename) {
- json = 'data:application/json;charset=utf-8,' + JSON.stringify(obj);
- data = encodeURI(json);
+function downloadAsJson(name, json) {
+ data = 'data:application/json;charset=utf-8,' + json;
 
  link = document.createElement('a');
  link.setAttribute('href', data);
- link.setAttribute('download', filename);
+ link.setAttribute('download', name);
  link.click();
  link.remove(); 
 }

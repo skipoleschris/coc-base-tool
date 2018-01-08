@@ -1,11 +1,13 @@
 import Html exposing (..)
-import Html.Attributes exposing (rel, href, class)
+import Html.Attributes exposing (rel, href, class, size, placeholder)
+import Html.Events exposing (onInput)
 import Http exposing (Error)
 
 import TownHallDefinitions exposing (Level, TownHallDefinition, loadTownHallDefinition, townHallLevelSelect)
 import Pallette exposing (..)
 import Grid exposing (..)
 import Toolbar exposing (..)
+import ImportExport exposing (..)
 
 main = 
   Html.program 
@@ -23,6 +25,7 @@ type alias Model =
   { grid : Grid
   , townHallLevels : List Level
   , townHallLevel : Maybe Level
+  , layoutName : Maybe String
   , definition : Maybe TownHallDefinition
   , pallette : Pallette
   , debug : Maybe Error
@@ -33,6 +36,7 @@ model =
   { grid = makeGrid defaultSize
   , townHallLevels = [11, 10, 9, 8, 7, 6, 5, 4, 3]
   , townHallLevel = Nothing
+  , layoutName = Nothing
   , definition = Nothing
   , pallette = emptyPallette
   , debug = Nothing
@@ -50,6 +54,8 @@ type Msg = ChangeTownHallLevel String
          | TileHover Coordinate
          | RemoveTileHover
          | ClearLayout
+         | ExportLayout
+         | LayoutNameChange String
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
@@ -121,6 +127,15 @@ update msg model =
       , Cmd.none
       )
 
+    ExportLayout ->
+      ( model
+      , exportLayout model)
+
+    LayoutNameChange name ->
+      ( { model | layoutName = if name == "" then Nothing else Just name }
+      , Cmd.none
+      )
+
 updateSelectedTile : Coordinate -> Model -> Model
 updateSelectedTile coordinate model =
   let
@@ -149,16 +164,43 @@ clearLayout model =
       , grid = makeGrid defaultSize 
       }
 
+exportLayout : Model -> Cmd msg
+exportLayout model =
+  let
+    filename =
+      model.layoutName
+        |> Maybe.withDefault "layout.json"
+
+    data =
+      model.townHallLevel
+        |> Maybe.map (\thLevel -> buildExportJson thLevel (layoutItems model.grid))
+        |> Maybe.map (\json -> filename ++ "|" ++ json)
+  in
+    data
+      |> Maybe.map export
+      |> Maybe.withDefault Cmd.none
+
 -- VIEW
 
 view : Model -> Html Msg
 view model =
   div [] 
     [ townHallLevelSelect ChangeTownHallLevel model.townHallLevels
+    , layoutTitle 
     , viewGrid TileClicked TileHover RemoveTileHover model.grid
     , viewPallette PalletteItemSelected PalletteLevelChange PalletteModeChange model.pallette
-    , viewToolbar ClearLayout
+    , viewToolbar ClearLayout ExportLayout
     ]
+
+layoutTitle : Html Msg
+layoutTitle =
+  div [ class "layout-title" ]
+      [ label [] [ text "Layout Title: " ]
+      , input [ size 50
+              , placeholder "Enter name..."
+              , onInput LayoutNameChange ] 
+              []
+      ]
 
 
 -- SUBSCRIPTIONS

@@ -6,13 +6,15 @@
     <link rel="stylesheet" href="styles/styles.css">
   </head>
   <body>
-    <div id="main">
-    </div>
     <script type="text/javascript" src="js/importexport.js"></script>
     <script type="text/javascript" src="js/base-tool.js"></script>
     <script type="text/javascript">
-      var node = document.getElementById('main');
-      var app = Elm.Main.embed(node);
+      var app = Elm.Main.fullscreen();
+
+      app.ports.export.subscribe(function(data) {
+        var elements = data.split("|");
+        downloadAsJson(elements[0], elements[1]);
+      });
     </script>
 
   </body>

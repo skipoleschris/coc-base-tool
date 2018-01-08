@@ -10391,6 +10391,32 @@ var _user$project$Grid$coordinatesFor = F2(
 				},
 				rows));
 	});
+var _user$project$Grid$layoutItems = function (grid) {
+	var items = A3(
+		_elm_lang$core$List$foldl,
+		F2(
+			function (item, result) {
+				var _p6 = _elm_lang$core$Tuple$second(item);
+				if (_p6.ctor === 'Item') {
+					var _p7 = _p6._0;
+					return {
+						ctor: '::',
+						_0: {
+							position: _elm_lang$core$Tuple$first(item),
+							item: _p7.id,
+							level: _p7.level,
+							mode: _p7.mode
+						},
+						_1: result
+					};
+				} else {
+					return result;
+				}
+			}),
+		{ctor: '[]'},
+		_elm_lang$core$Dict$toList(grid.tiles));
+	return items;
+};
 var _user$project$Grid$colIndexes = function (grid) {
 	return A2(_elm_lang$core$List$range, 1, grid.size.width);
 };
@@ -10468,6 +10494,10 @@ var _user$project$Grid$HoverState = F3(
 	function (a, b, c) {
 		return {disabledHighight: a, deleteHighlight: b, placeHighlight: c};
 	});
+var _user$project$Grid$LayoutItem = F4(
+	function (a, b, c, d) {
+		return {position: a, item: b, level: c, mode: d};
+	});
 var _user$project$Grid$Reference = F2(
 	function (a, b) {
 		return {ctor: 'Reference', _0: a, _1: b};
@@ -10477,9 +10507,9 @@ var _user$project$Grid$Item = function (a) {
 };
 var _user$project$Grid$createTilesForItem = F2(
 	function (coordinate, item) {
-		var _p6 = coordinate;
-		var top = _p6._0;
-		var left = _p6._1;
+		var _p8 = coordinate;
+		var top = _p8._0;
+		var left = _p8._1;
 		var rows = A2(_elm_lang$core$List$range, top, (top + item.size.height) - 1);
 		var cols = A2(_elm_lang$core$List$range, left, (left + item.size.width) - 1);
 		return _elm_lang$core$List$concat(
@@ -10529,14 +10559,14 @@ var _user$project$Grid$isPopulated = F2(
 				},
 				A2(_elm_lang$core$Dict$get, coordinate, grid.tiles)));
 	});
-var _user$project$Grid$emptyTilesForCriteria = function (_p7) {
-	var _p8 = _p7;
-	var _p10 = _p8._1;
-	var _p9 = _p8._0;
-	var top = _p9._0;
-	var left = _p9._1;
-	var rows = A2(_elm_lang$core$List$range, top, (top + _p10.height) - 1);
-	var cols = A2(_elm_lang$core$List$range, left, (left + _p10.width) - 1);
+var _user$project$Grid$emptyTilesForCriteria = function (_p9) {
+	var _p10 = _p9;
+	var _p12 = _p10._1;
+	var _p11 = _p10._0;
+	var top = _p11._0;
+	var left = _p11._1;
+	var rows = A2(_elm_lang$core$List$range, top, (top + _p12.height) - 1);
+	var cols = A2(_elm_lang$core$List$range, left, (left + _p12.width) - 1);
 	return _elm_lang$core$List$concat(
 		A2(
 			_elm_lang$core$List$map,
@@ -10559,12 +10589,12 @@ var _user$project$Grid$removeItem = F2(
 		var removeCriteria = A2(
 			_elm_lang$core$Maybe$map,
 			function (t) {
-				var _p11 = t;
-				switch (_p11.ctor) {
+				var _p13 = t;
+				switch (_p13.ctor) {
 					case 'Item':
-						return {ctor: '_Tuple2', _0: coordinate, _1: _p11._0.size};
+						return {ctor: '_Tuple2', _0: coordinate, _1: _p13._0.size};
 					case 'Reference':
-						return {ctor: '_Tuple2', _0: _p11._0, _1: _p11._1.size};
+						return {ctor: '_Tuple2', _0: _p13._0, _1: _p13._1.size};
 					default:
 						return {
 							ctor: '_Tuple2',
@@ -10581,9 +10611,9 @@ var _user$project$Grid$removeItem = F2(
 		var updatedTiles = A3(
 			_elm_lang$core$List$foldl,
 			F2(
-				function (_p12, tiles) {
-					var _p13 = _p12;
-					return A3(_elm_lang$core$Dict$insert, _p13._0, _p13._1, tiles);
+				function (_p14, tiles) {
+					var _p15 = _p14;
+					return A3(_elm_lang$core$Dict$insert, _p15._0, _p15._1, tiles);
 				}),
 			grid.tiles,
 			newTiles);
@@ -10593,9 +10623,9 @@ var _user$project$Grid$removeItem = F2(
 	});
 var _user$project$Grid$canPlaceItem = F3(
 	function (coordinate, grid, item) {
-		var _p14 = coordinate;
-		var top = _p14._0;
-		var left = _p14._1;
+		var _p16 = coordinate;
+		var top = _p16._0;
+		var left = _p16._1;
 		var rows = A2(_elm_lang$core$List$range, top, (top + item.size.height) - 1);
 		var cols = A2(_elm_lang$core$List$range, left, (left + item.size.width) - 1);
 		return A2(
@@ -10633,11 +10663,11 @@ var _user$project$Grid$tileHover = F3(
 			A2(
 				_elm_lang$core$Maybe$map,
 				function (tile) {
-					var _p15 = tile;
-					switch (_p15.ctor) {
+					var _p17 = tile;
+					switch (_p17.ctor) {
 						case 'Empty':
-							var _p16 = item;
-							if (_p16.ctor === 'Nothing') {
+							var _p18 = item;
+							if (_p18.ctor === 'Nothing') {
 								return {
 									disabledHighight: {
 										ctor: '::',
@@ -10648,13 +10678,13 @@ var _user$project$Grid$tileHover = F3(
 									placeHighlight: {ctor: '[]'}
 								};
 							} else {
-								var _p17 = _p16._0;
-								return A3(_user$project$Grid$canPlaceItem, coordinate, grid, _p17) ? {
+								var _p19 = _p18._0;
+								return A3(_user$project$Grid$canPlaceItem, coordinate, grid, _p19) ? {
 									disabledHighight: {ctor: '[]'},
 									deleteHighlight: {ctor: '[]'},
-									placeHighlight: A2(_user$project$Grid$coordinatesFor, coordinate, _p17.size)
+									placeHighlight: A2(_user$project$Grid$coordinatesFor, coordinate, _p19.size)
 								} : {
-									disabledHighight: A2(_user$project$Grid$coordinatesFor, coordinate, _p17.size),
+									disabledHighight: A2(_user$project$Grid$coordinatesFor, coordinate, _p19.size),
 									deleteHighlight: {ctor: '[]'},
 									placeHighlight: {ctor: '[]'}
 								};
@@ -10662,13 +10692,13 @@ var _user$project$Grid$tileHover = F3(
 						case 'Item':
 							return {
 								disabledHighight: {ctor: '[]'},
-								deleteHighlight: A2(_user$project$Grid$coordinatesFor, coordinate, _p15._0.size),
+								deleteHighlight: A2(_user$project$Grid$coordinatesFor, coordinate, _p17._0.size),
 								placeHighlight: {ctor: '[]'}
 							};
 						default:
 							return {
 								disabledHighight: {ctor: '[]'},
-								deleteHighlight: A2(_user$project$Grid$coordinatesFor, _p15._0, _p15._1.size),
+								deleteHighlight: A2(_user$project$Grid$coordinatesFor, _p17._0, _p17._1.size),
 								placeHighlight: {ctor: '[]'}
 							};
 					}
@@ -10690,9 +10720,9 @@ var _user$project$Grid$placeItem = F3(
 		var updatedTiles = A3(
 			_elm_lang$core$List$foldl,
 			F2(
-				function (_p18, tiles) {
-					var _p19 = _p18;
-					return A3(_elm_lang$core$Dict$insert, _p19._0, _p19._1, tiles);
+				function (_p20, tiles) {
+					var _p21 = _p20;
+					return A3(_elm_lang$core$Dict$insert, _p21._0, _p21._1, tiles);
 				}),
 			grid.tiles,
 			newTiles);
@@ -10713,51 +10743,118 @@ var _user$project$Grid$tileSelected = F3(
 		return A3(_user$project$Grid$tileHover, coordinate, actionedGrid, item);
 	});
 
-var _user$project$Toolbar$viewToolbar = function (clearLayoutMsg) {
-	return A2(
-		_elm_lang$html$Html$div,
+var _user$project$ImportExport$itemToObject = function (item) {
+	var mode = A2(
+		_elm_lang$core$Maybe$withDefault,
+		{ctor: '[]'},
+		A2(
+			_elm_lang$core$Maybe$map,
+			function (mode) {
+				return {
+					ctor: '::',
+					_0: {
+						ctor: '_Tuple2',
+						_0: 'mode',
+						_1: _elm_lang$core$Json_Encode$string(mode)
+					},
+					_1: {ctor: '[]'}
+				};
+			},
+			item.mode));
+	var _p0 = item.position;
+	var row = _p0._0;
+	var column = _p0._1;
+	var positionObj = _elm_lang$core$Json_Encode$object(
 		{
 			ctor: '::',
-			_0: _elm_lang$html$Html_Attributes$class('toolbar'),
-			_1: {ctor: '[]'}
-		},
-		{
-			ctor: '::',
-			_0: A2(
-				_elm_lang$html$Html$div,
-				{
-					ctor: '::',
-					_0: _elm_lang$html$Html_Attributes$class('tool-heading'),
-					_1: {ctor: '[]'}
-				},
-				{
-					ctor: '::',
-					_0: _elm_lang$html$Html$text('Tools'),
-					_1: {ctor: '[]'}
-				}),
+			_0: {
+				ctor: '_Tuple2',
+				_0: 'row',
+				_1: _elm_lang$core$Json_Encode$int(row)
+			},
 			_1: {
+				ctor: '::',
+				_0: {
+					ctor: '_Tuple2',
+					_0: 'column',
+					_1: _elm_lang$core$Json_Encode$int(column)
+				},
+				_1: {ctor: '[]'}
+			}
+		});
+	return _elm_lang$core$Json_Encode$object(
+		A2(
+			_elm_lang$core$Basics_ops['++'],
+			{
+				ctor: '::',
+				_0: {ctor: '_Tuple2', _0: 'position', _1: positionObj},
+				_1: {
+					ctor: '::',
+					_0: {
+						ctor: '_Tuple2',
+						_0: 'building',
+						_1: _elm_lang$core$Json_Encode$string(item.item)
+					},
+					_1: {
+						ctor: '::',
+						_0: {
+							ctor: '_Tuple2',
+							_0: 'level',
+							_1: _elm_lang$core$Json_Encode$int(item.level)
+						},
+						_1: {ctor: '[]'}
+					}
+				}
+			},
+			mode));
+};
+var _user$project$ImportExport$buildExportJson = F2(
+	function (thLevel, items) {
+		var exportItems = _elm_lang$core$Json_Encode$list(
+			A2(_elm_lang$core$List$map, _user$project$ImportExport$itemToObject, items));
+		var exportJson = _elm_lang$core$Json_Encode$object(
+			{
+				ctor: '::',
+				_0: {
+					ctor: '_Tuple2',
+					_0: 'townHallLevel',
+					_1: _elm_lang$core$Json_Encode$int(thLevel)
+				},
+				_1: {
+					ctor: '::',
+					_0: {ctor: '_Tuple2', _0: 'items', _1: exportItems},
+					_1: {ctor: '[]'}
+				}
+			});
+		return A2(_elm_lang$core$Json_Encode$encode, 0, exportJson);
+	});
+var _user$project$ImportExport$export = _elm_lang$core$Native_Platform.outgoingPort(
+	'export',
+	function (v) {
+		return v;
+	});
+
+var _user$project$Toolbar$viewToolbar = F2(
+	function (clearLayoutMsg, exportLayoutMsg) {
+		return A2(
+			_elm_lang$html$Html$div,
+			{
+				ctor: '::',
+				_0: _elm_lang$html$Html_Attributes$class('toolbar'),
+				_1: {ctor: '[]'}
+			},
+			{
 				ctor: '::',
 				_0: A2(
 					_elm_lang$html$Html$div,
 					{
 						ctor: '::',
-						_0: _elm_lang$html$Html_Attributes$class('tool'),
+						_0: _elm_lang$html$Html_Attributes$class('tool-heading'),
 						_1: {ctor: '[]'}
 					},
 					{
 						ctor: '::',
-						_0: A2(
-							_elm_lang$html$Html$button,
-							{
-								ctor: '::',
-								_0: _elm_lang$html$Html_Events$onClick(clearLayoutMsg),
-								_1: {ctor: '[]'}
-							},
-							{
-								ctor: '::',
-								_0: _elm_lang$html$Html$text('Clear Layout'),
-								_1: {ctor: '[]'}
-							}),
+						_0: _elm_lang$html$Html$text('Tools'),
 						_1: {ctor: '[]'}
 					}),
 				_1: {
@@ -10773,10 +10870,14 @@ var _user$project$Toolbar$viewToolbar = function (clearLayoutMsg) {
 							ctor: '::',
 							_0: A2(
 								_elm_lang$html$Html$button,
-								{ctor: '[]'},
 								{
 									ctor: '::',
-									_0: _elm_lang$html$Html$text('Export...'),
+									_0: _elm_lang$html$Html_Events$onClick(clearLayoutMsg),
+									_1: {ctor: '[]'}
+								},
+								{
+									ctor: '::',
+									_0: _elm_lang$html$Html$text('Clear Layout'),
 									_1: {ctor: '[]'}
 								}),
 							_1: {ctor: '[]'}
@@ -10794,23 +10895,72 @@ var _user$project$Toolbar$viewToolbar = function (clearLayoutMsg) {
 								ctor: '::',
 								_0: A2(
 									_elm_lang$html$Html$button,
-									{ctor: '[]'},
 									{
 										ctor: '::',
-										_0: _elm_lang$html$Html$text('Import...'),
+										_0: _elm_lang$html$Html_Events$onClick(exportLayoutMsg),
+										_1: {ctor: '[]'}
+									},
+									{
+										ctor: '::',
+										_0: _elm_lang$html$Html$text('Export...'),
 										_1: {ctor: '[]'}
 									}),
 								_1: {ctor: '[]'}
 							}),
-						_1: {ctor: '[]'}
+						_1: {
+							ctor: '::',
+							_0: A2(
+								_elm_lang$html$Html$div,
+								{
+									ctor: '::',
+									_0: _elm_lang$html$Html_Attributes$class('tool'),
+									_1: {ctor: '[]'}
+								},
+								{
+									ctor: '::',
+									_0: A2(
+										_elm_lang$html$Html$button,
+										{ctor: '[]'},
+										{
+											ctor: '::',
+											_0: _elm_lang$html$Html$text('Import...'),
+											_1: {ctor: '[]'}
+										}),
+									_1: {ctor: '[]'}
+								}),
+							_1: {ctor: '[]'}
+						}
 					}
 				}
-			}
-		});
-};
+			});
+	});
 
 var _user$project$Main$subscriptions = function (model) {
 	return _elm_lang$core$Platform_Sub$none;
+};
+var _user$project$Main$exportLayout = function (model) {
+	var filename = A2(_elm_lang$core$Maybe$withDefault, 'layout.json', model.layoutName);
+	var data = A2(
+		_elm_lang$core$Maybe$map,
+		function (json) {
+			return A2(
+				_elm_lang$core$Basics_ops['++'],
+				filename,
+				A2(_elm_lang$core$Basics_ops['++'], '|', json));
+		},
+		A2(
+			_elm_lang$core$Maybe$map,
+			function (thLevel) {
+				return A2(
+					_user$project$ImportExport$buildExportJson,
+					thLevel,
+					_user$project$Grid$layoutItems(model.grid));
+			},
+			model.townHallLevel));
+	return A2(
+		_elm_lang$core$Maybe$withDefault,
+		_elm_lang$core$Platform_Cmd$none,
+		A2(_elm_lang$core$Maybe$map, _user$project$ImportExport$export, data));
 };
 var _user$project$Main$clearLayout = function (model) {
 	var _p0 = model.definition;
@@ -10898,15 +11048,58 @@ var _user$project$Main$model = {
 		}
 	},
 	townHallLevel: _elm_lang$core$Maybe$Nothing,
+	layoutName: _elm_lang$core$Maybe$Nothing,
 	definition: _elm_lang$core$Maybe$Nothing,
 	pallette: _user$project$Pallette$emptyPallette,
 	debug: _elm_lang$core$Maybe$Nothing
 };
 var _user$project$Main$init = {ctor: '_Tuple2', _0: _user$project$Main$model, _1: _elm_lang$core$Platform_Cmd$none};
-var _user$project$Main$Model = F6(
-	function (a, b, c, d, e, f) {
-		return {grid: a, townHallLevels: b, townHallLevel: c, definition: d, pallette: e, debug: f};
+var _user$project$Main$Model = F7(
+	function (a, b, c, d, e, f, g) {
+		return {grid: a, townHallLevels: b, townHallLevel: c, layoutName: d, definition: e, pallette: f, debug: g};
 	});
+var _user$project$Main$LayoutNameChange = function (a) {
+	return {ctor: 'LayoutNameChange', _0: a};
+};
+var _user$project$Main$layoutTitle = A2(
+	_elm_lang$html$Html$div,
+	{
+		ctor: '::',
+		_0: _elm_lang$html$Html_Attributes$class('layout-title'),
+		_1: {ctor: '[]'}
+	},
+	{
+		ctor: '::',
+		_0: A2(
+			_elm_lang$html$Html$label,
+			{ctor: '[]'},
+			{
+				ctor: '::',
+				_0: _elm_lang$html$Html$text('Layout Title: '),
+				_1: {ctor: '[]'}
+			}),
+		_1: {
+			ctor: '::',
+			_0: A2(
+				_elm_lang$html$Html$input,
+				{
+					ctor: '::',
+					_0: _elm_lang$html$Html_Attributes$size(50),
+					_1: {
+						ctor: '::',
+						_0: _elm_lang$html$Html_Attributes$placeholder('Enter name...'),
+						_1: {
+							ctor: '::',
+							_0: _elm_lang$html$Html_Events$onInput(_user$project$Main$LayoutNameChange),
+							_1: {ctor: '[]'}
+						}
+					}
+				},
+				{ctor: '[]'}),
+			_1: {ctor: '[]'}
+		}
+	});
+var _user$project$Main$ExportLayout = {ctor: 'ExportLayout'};
 var _user$project$Main$ClearLayout = {ctor: 'ClearLayout'};
 var _user$project$Main$RemoveTileHover = {ctor: 'RemoveTileHover'};
 var _user$project$Main$TileHover = function (a) {
@@ -11041,10 +11234,27 @@ var _user$project$Main$update = F2(
 						}),
 					_1: _elm_lang$core$Platform_Cmd$none
 				};
-			default:
+			case 'ClearLayout':
 				return {
 					ctor: '_Tuple2',
 					_0: _user$project$Main$clearLayout(model),
+					_1: _elm_lang$core$Platform_Cmd$none
+				};
+			case 'ExportLayout':
+				return {
+					ctor: '_Tuple2',
+					_0: model,
+					_1: _user$project$Main$exportLayout(model)
+				};
+			default:
+				var _p4 = _p1._0;
+				return {
+					ctor: '_Tuple2',
+					_0: _elm_lang$core$Native_Utils.update(
+						model,
+						{
+							layoutName: _elm_lang$core$Native_Utils.eq(_p4, '') ? _elm_lang$core$Maybe$Nothing : _elm_lang$core$Maybe$Just(_p4)
+						}),
 					_1: _elm_lang$core$Platform_Cmd$none
 				};
 		}
@@ -11061,14 +11271,18 @@ var _user$project$Main$view = function (model) {
 			_0: A2(_user$project$TownHallDefinitions$townHallLevelSelect, _user$project$Main$ChangeTownHallLevel, model.townHallLevels),
 			_1: {
 				ctor: '::',
-				_0: A4(_user$project$Grid$viewGrid, _user$project$Main$TileClicked, _user$project$Main$TileHover, _user$project$Main$RemoveTileHover, model.grid),
+				_0: _user$project$Main$layoutTitle,
 				_1: {
 					ctor: '::',
-					_0: A4(_user$project$Pallette$viewPallette, _user$project$Main$PalletteItemSelected, _user$project$Main$PalletteLevelChange, _user$project$Main$PalletteModeChange, model.pallette),
+					_0: A4(_user$project$Grid$viewGrid, _user$project$Main$TileClicked, _user$project$Main$TileHover, _user$project$Main$RemoveTileHover, model.grid),
 					_1: {
 						ctor: '::',
-						_0: _user$project$Toolbar$viewToolbar(_user$project$Main$ClearLayout),
-						_1: {ctor: '[]'}
+						_0: A4(_user$project$Pallette$viewPallette, _user$project$Main$PalletteItemSelected, _user$project$Main$PalletteLevelChange, _user$project$Main$PalletteModeChange, model.pallette),
+						_1: {
+							ctor: '::',
+							_0: A2(_user$project$Toolbar$viewToolbar, _user$project$Main$ClearLayout, _user$project$Main$ExportLayout),
+							_1: {ctor: '[]'}
+						}
 					}
 				}
 			}

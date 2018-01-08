@@ -7,10 +7,15 @@ body {
   position: absolute;
   top: 10px;
   left: 10px;
-  width: 100%;
 }
 
 
+.layout-title {
+  position: absolute;
+  top: 10px;
+  left: 240px;
+  padding-left: 2px;
+}
 
 
 .tile {
