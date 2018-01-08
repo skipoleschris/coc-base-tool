@@ -101,3 +101,29 @@ body {
   padding: 2px;
 }
 
+
+.import-dialog {
+  position: relative;
+  top: 300px;
+  width: 400px;
+  margin: auto;
+  z-index: 5;
+
+  padding: 10px;
+  border: 2px solid black;
+  background-color: white;
+}
+
+.visible {
+  display: block;
+}
+
+.hidden {
+  display: none;
+}
+
+.file-select {
+  width: 350px;
+  height: 40px;
+}
+

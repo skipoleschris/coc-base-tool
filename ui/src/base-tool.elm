@@ -1,6 +1,6 @@
 import Html exposing (..)
-import Html.Attributes exposing (rel, href, class, size, placeholder)
-import Html.Events exposing (onInput)
+import Html.Attributes exposing (rel, href, class, size, placeholder, id)
+import Html.Events exposing (onInput, onClick)
 import Http exposing (Error)
 
 import TownHallDefinitions exposing (Level, TownHallDefinition, loadTownHallDefinition, townHallLevelSelect)
@@ -28,6 +28,7 @@ type alias Model =
   , layoutName : Maybe String
   , definition : Maybe TownHallDefinition
   , pallette : Pallette
+  , importInProgress : Bool
   , debug : Maybe Error
   }
 
@@ -39,6 +40,7 @@ model =
   , layoutName = Nothing
   , definition = Nothing
   , pallette = emptyPallette
+  , importInProgress = False
   , debug = Nothing
   }
 
@@ -55,6 +57,9 @@ type Msg = ChangeTownHallLevel String
          | RemoveTileHover
          | ClearLayout
          | ExportLayout
+         | StartImportLayout
+         | CancelImport
+         | ImportLayout String
          | LayoutNameChange String
 
 update : Msg -> Model -> (Model, Cmd Msg)
@@ -131,6 +136,21 @@ update msg model =
       ( model
       , exportLayout model)
 
+    StartImportLayout ->
+      ( { model | importInProgress = True }
+      , initImport "file-select"
+      )
+
+    CancelImport ->
+      ( { model | importInProgress = False }
+      , cancelImport "file-select"
+      )
+
+    ImportLayout data ->
+      ( { model | importInProgress = False }
+      , Cmd.none
+      )
+
     LayoutNameChange name ->
       ( { model | layoutName = if name == "" then Nothing else Just name }
       , Cmd.none
@@ -189,7 +209,8 @@ view model =
     , layoutTitle 
     , viewGrid TileClicked TileHover RemoveTileHover model.grid
     , viewPallette PalletteItemSelected PalletteLevelChange PalletteModeChange model.pallette
-    , viewToolbar ClearLayout ExportLayout
+    , viewToolbar ClearLayout ExportLayout StartImportLayout
+    , importDialog model
     ]
 
 layoutTitle : Html Msg
@@ -202,11 +223,29 @@ layoutTitle =
               []
       ]
 
+importDialog : Model -> Html Msg
+importDialog model =
+  let
+    visibility = 
+      if model.importInProgress
+      then "visible"
+      else "hidden"
+      
+  in
+    div [ class ("import-dialog " ++ visibility) ]
+        [ h3 [] [ text "Select File To Import" ]
+        , div [ id "file-select"
+              , class "file-select" 
+              ] []
+        , button [ onClick CancelImport ] [ text "Cancel" ]
+        ]
+
 
 -- SUBSCRIPTIONS
 
 subscriptions : Model -> Sub Msg
-subscriptions model = Sub.none
+subscriptions model = 
+  importData ImportLayout
 
 
 -- INIT

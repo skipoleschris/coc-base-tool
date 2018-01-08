@@ -10833,9 +10833,20 @@ var _user$project$ImportExport$export = _elm_lang$core$Native_Platform.outgoingP
 	function (v) {
 		return v;
 	});
+var _user$project$ImportExport$initImport = _elm_lang$core$Native_Platform.outgoingPort(
+	'initImport',
+	function (v) {
+		return v;
+	});
+var _user$project$ImportExport$cancelImport = _elm_lang$core$Native_Platform.outgoingPort(
+	'cancelImport',
+	function (v) {
+		return v;
+	});
+var _user$project$ImportExport$importData = _elm_lang$core$Native_Platform.incomingPort('importData', _elm_lang$core$Json_Decode$string);
 
-var _user$project$Toolbar$viewToolbar = F2(
-	function (clearLayoutMsg, exportLayoutMsg) {
+var _user$project$Toolbar$viewToolbar = F3(
+	function (clearLayoutMsg, exportLayoutMsg, startImportMsg) {
 		return A2(
 			_elm_lang$html$Html$div,
 			{
@@ -10902,7 +10913,7 @@ var _user$project$Toolbar$viewToolbar = F2(
 									},
 									{
 										ctor: '::',
-										_0: _elm_lang$html$Html$text('Export...'),
+										_0: _elm_lang$html$Html$text('Export'),
 										_1: {ctor: '[]'}
 									}),
 								_1: {ctor: '[]'}
@@ -10920,7 +10931,11 @@ var _user$project$Toolbar$viewToolbar = F2(
 									ctor: '::',
 									_0: A2(
 										_elm_lang$html$Html$button,
-										{ctor: '[]'},
+										{
+											ctor: '::',
+											_0: _elm_lang$html$Html_Events$onClick(startImportMsg),
+											_1: {ctor: '[]'}
+										},
 										{
 											ctor: '::',
 											_0: _elm_lang$html$Html$text('Import...'),
@@ -10935,9 +10950,6 @@ var _user$project$Toolbar$viewToolbar = F2(
 			});
 	});
 
-var _user$project$Main$subscriptions = function (model) {
-	return _elm_lang$core$Platform_Sub$none;
-};
 var _user$project$Main$exportLayout = function (model) {
 	var filename = A2(_elm_lang$core$Maybe$withDefault, 'layout.json', model.layoutName);
 	var data = A2(
@@ -11051,12 +11063,13 @@ var _user$project$Main$model = {
 	layoutName: _elm_lang$core$Maybe$Nothing,
 	definition: _elm_lang$core$Maybe$Nothing,
 	pallette: _user$project$Pallette$emptyPallette,
+	importInProgress: false,
 	debug: _elm_lang$core$Maybe$Nothing
 };
 var _user$project$Main$init = {ctor: '_Tuple2', _0: _user$project$Main$model, _1: _elm_lang$core$Platform_Cmd$none};
-var _user$project$Main$Model = F7(
-	function (a, b, c, d, e, f, g) {
-		return {grid: a, townHallLevels: b, townHallLevel: c, layoutName: d, definition: e, pallette: f, debug: g};
+var _user$project$Main$Model = F8(
+	function (a, b, c, d, e, f, g, h) {
+		return {grid: a, townHallLevels: b, townHallLevel: c, layoutName: d, definition: e, pallette: f, importInProgress: g, debug: h};
 	});
 var _user$project$Main$LayoutNameChange = function (a) {
 	return {ctor: 'LayoutNameChange', _0: a};
@@ -11099,6 +11112,78 @@ var _user$project$Main$layoutTitle = A2(
 			_1: {ctor: '[]'}
 		}
 	});
+var _user$project$Main$ImportLayout = function (a) {
+	return {ctor: 'ImportLayout', _0: a};
+};
+var _user$project$Main$subscriptions = function (model) {
+	return _user$project$ImportExport$importData(_user$project$Main$ImportLayout);
+};
+var _user$project$Main$CancelImport = {ctor: 'CancelImport'};
+var _user$project$Main$importDialog = function (model) {
+	var visibility = model.importInProgress ? 'visible' : 'hidden';
+	return A2(
+		_elm_lang$html$Html$div,
+		{
+			ctor: '::',
+			_0: _elm_lang$html$Html_Attributes$class(
+				A2(_elm_lang$core$Basics_ops['++'], 'import-dialog ', visibility)),
+			_1: {ctor: '[]'}
+		},
+		{
+			ctor: '::',
+			_0: A2(
+				_elm_lang$html$Html$h3,
+				{ctor: '[]'},
+				{
+					ctor: '::',
+					_0: _elm_lang$html$Html$text('Select File To Import'),
+					_1: {ctor: '[]'}
+				}),
+			_1: {
+				ctor: '::',
+				_0: A2(
+					_elm_lang$html$Html$div,
+					{
+						ctor: '::',
+						_0: _elm_lang$html$Html_Attributes$id('file-select'),
+						_1: {
+							ctor: '::',
+							_0: _elm_lang$html$Html_Attributes$class('file-select'),
+							_1: {ctor: '[]'}
+						}
+					},
+					{ctor: '[]'}),
+				_1: {
+					ctor: '::',
+					_0: A2(
+						_elm_lang$html$Html$button,
+						{ctor: '[]'},
+						{
+							ctor: '::',
+							_0: _elm_lang$html$Html$text('Import'),
+							_1: {ctor: '[]'}
+						}),
+					_1: {
+						ctor: '::',
+						_0: A2(
+							_elm_lang$html$Html$button,
+							{
+								ctor: '::',
+								_0: _elm_lang$html$Html_Events$onClick(_user$project$Main$CancelImport),
+								_1: {ctor: '[]'}
+							},
+							{
+								ctor: '::',
+								_0: _elm_lang$html$Html$text('Cancel'),
+								_1: {ctor: '[]'}
+							}),
+						_1: {ctor: '[]'}
+					}
+				}
+			}
+		});
+};
+var _user$project$Main$StartImportLayout = {ctor: 'StartImportLayout'};
 var _user$project$Main$ExportLayout = {ctor: 'ExportLayout'};
 var _user$project$Main$ClearLayout = {ctor: 'ClearLayout'};
 var _user$project$Main$RemoveTileHover = {ctor: 'RemoveTileHover'};
@@ -11246,6 +11331,30 @@ var _user$project$Main$update = F2(
 					_0: model,
 					_1: _user$project$Main$exportLayout(model)
 				};
+			case 'StartImportLayout':
+				return {
+					ctor: '_Tuple2',
+					_0: _elm_lang$core$Native_Utils.update(
+						model,
+						{importInProgress: true}),
+					_1: _user$project$ImportExport$initImport('file-select')
+				};
+			case 'CancelImport':
+				return {
+					ctor: '_Tuple2',
+					_0: _elm_lang$core$Native_Utils.update(
+						model,
+						{importInProgress: false}),
+					_1: _user$project$ImportExport$cancelImport('file-select')
+				};
+			case 'ImportLayout':
+				return {
+					ctor: '_Tuple2',
+					_0: _elm_lang$core$Native_Utils.update(
+						model,
+						{importInProgress: false}),
+					_1: _elm_lang$core$Platform_Cmd$none
+				};
 			default:
 				var _p4 = _p1._0;
 				return {
@@ -11280,8 +11389,12 @@ var _user$project$Main$view = function (model) {
 						_0: A4(_user$project$Pallette$viewPallette, _user$project$Main$PalletteItemSelected, _user$project$Main$PalletteLevelChange, _user$project$Main$PalletteModeChange, model.pallette),
 						_1: {
 							ctor: '::',
-							_0: A2(_user$project$Toolbar$viewToolbar, _user$project$Main$ClearLayout, _user$project$Main$ExportLayout),
-							_1: {ctor: '[]'}
+							_0: A3(_user$project$Toolbar$viewToolbar, _user$project$Main$ClearLayout, _user$project$Main$ExportLayout, _user$project$Main$StartImportLayout),
+							_1: {
+								ctor: '::',
+								_0: _user$project$Main$importDialog(model),
+								_1: {ctor: '[]'}
+							}
 						}
 					}
 				}
