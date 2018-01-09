@@ -8,8 +8,8 @@ import TownHallDefinitions exposing (TownHallDefinition, loadTownHallDefinition,
 import Pallette exposing (..)
 import Grid exposing (..)
 import Toolbar exposing (..)
-import LayoutDefinitions exposing(..)
-import ImportExport exposing (..)
+import Import exposing (..)
+import Export exposing (..)
 
 main = 
   Html.program 
@@ -30,7 +30,7 @@ type alias Model =
   , layoutName : Maybe String
   , definition : Maybe TownHallDefinition
   , pallette : Pallette
-  , importInProgress : Bool
+  , importState : ImportState
   , debug : Maybe Error
   }
 
@@ -42,7 +42,7 @@ model =
   , layoutName = Nothing
   , definition = Nothing
   , pallette = emptyPallette
-  , importInProgress = False
+  , importState = initialImportState
   , debug = Nothing
   }
 
@@ -60,7 +60,7 @@ type Msg = ChangeTownHallLevel String
          | ClearLayout
          | ExportLayout
          | StartImportLayout
-         | CancelImport
+         | CancelImportLayout
          | ImportLayout String
          | LayoutNameChange String
 
@@ -136,22 +136,16 @@ update msg model =
 
     ExportLayout ->
       ( model
-      , exportLayout model)
+      , processExport model.layoutName model.townHallLevel (layoutItems model.grid))
 
     StartImportLayout ->
-      ( { model | importInProgress = True }
-      , initImport "file-select"
-      )
+      processImportStep model showImportDialog
 
-    CancelImport ->
-      ( { model | importInProgress = False }
-      , cancelImport "file-select"
-      )
+    CancelImportLayout ->
+      processImportStep model hideImportDialog
 
     ImportLayout data ->
-      ( { model | importInProgress = False }
-      , Cmd.none
-      )
+      processImportStep model (processImport data)
 
     LayoutNameChange name ->
       ( { model | layoutName = if name == "" then Nothing else Just name }
@@ -186,25 +180,15 @@ clearLayout model =
       , grid = makeGrid defaultSize 
       }
 
-exportLayout : Model -> Cmd msg
-exportLayout model =
+processImportStep : Model -> (ImportState -> (ImportState, Cmd msg)) -> (Model, Cmd msg)
+processImportStep model f =
   let
-    layoutName =
-      model.layoutName
-        |> Maybe.withDefault ""
-
-    filename =
-      model.layoutName
-        |> Maybe.withDefault "layout.json"
-
-    data =
-      model.townHallLevel
-        |> Maybe.map (\thLevel -> encodeToJson layoutName thLevel (layoutItems model.grid))
-        |> Maybe.map (\json -> filename ++ "|" ++ json)
+    (state, cmd) = f model.importState
   in
-    data
-      |> Maybe.map export
-      |> Maybe.withDefault Cmd.none
+    ( { model | importState = state }
+    , cmd
+    )
+
 
 -- VIEW
 
@@ -216,7 +200,7 @@ view model =
     , viewGrid TileClicked TileHover RemoveTileHover model.grid
     , viewPallette PalletteItemSelected PalletteLevelChange PalletteModeChange model.pallette
     , viewToolbar ClearLayout ExportLayout StartImportLayout
-    , importDialog model
+    , importDialog model.importState CancelImportLayout
     ]
 
 layoutTitle : Html Msg
@@ -229,29 +213,13 @@ layoutTitle =
               []
       ]
 
-importDialog : Model -> Html Msg
-importDialog model =
-  let
-    visibility = 
-      if model.importInProgress
-      then "visible"
-      else "hidden"
-      
-  in
-    div [ class ("import-dialog " ++ visibility) ]
-        [ h3 [] [ text "Select File To Import" ]
-        , div [ id "file-select"
-              , class "file-select" 
-              ] []
-        , button [ onClick CancelImport ] [ text "Cancel" ]
-        ]
 
 
 -- SUBSCRIPTIONS
 
 subscriptions : Model -> Sub Msg
 subscriptions model = 
-  importData ImportLayout
+  initImportDataSubscription ImportLayout
 
 
 -- INIT

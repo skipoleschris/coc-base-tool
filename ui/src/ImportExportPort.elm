@@ -1,4 +1,4 @@
-port module ImportExport exposing
+port module ImportExportPort exposing
   ( export
   , initImport
   , cancelImport
