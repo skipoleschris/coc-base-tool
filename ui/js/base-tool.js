@@ -9886,6 +9886,10 @@ var _user$project$Pallette$selectItem = F2(
 				selected: _elm_lang$core$Maybe$Just(id)
 			});
 	});
+var _user$project$Pallette$isItemAvailable = F2(
+	function (pallette, item) {
+		return true;
+	});
 var _user$project$Pallette$numberConsumed = F2(
 	function (consumptions, id) {
 		return A2(
@@ -11021,43 +11025,200 @@ var _user$project$Import$importDialog = F2(
 				}
 			});
 	});
-var _user$project$Import$applyImport = F3(
-	function (state, pallette, grid) {
+var _user$project$Import$importError = F4(
+	function (msg, state, pallette, grid) {
 		return {
 			ctor: '_Tuple2',
 			_0: {
 				ctor: '_Tuple3',
 				_0: _elm_lang$core$Native_Utils.update(
 					state,
-					{inProgress: false}),
+					{inProgress: true, error: msg}),
 				_1: pallette,
 				_2: grid
 			},
-			_1: _user$project$ImportExportPort$cancelImport('file-select')
+			_1: _elm_lang$core$Platform_Cmd$none
 		};
+	});
+var _user$project$Import$toCoordinateAndPlacedItem = F2(
+	function (pallette, item) {
+		return {
+			ctor: '_Tuple2',
+			_0: {ctor: '_Tuple2', _0: item.position.row, _1: item.position.column},
+			_1: {
+				id: item.item,
+				level: item.level,
+				mode: item.mode,
+				size: A2(_user$project$Pallette$itemSize, pallette, item.item)
+			}
+		};
+	});
+var _user$project$Import$makeError = F3(
+	function (coordinate, item, cause) {
+		var mode = A2(
+			_elm_lang$core$Maybe$withDefault,
+			'',
+			A2(
+				_elm_lang$core$Maybe$map,
+				function (m) {
+					return A2(
+						_elm_lang$core$Basics_ops['++'],
+						' in ',
+						A2(_elm_lang$core$Basics_ops['++'], m, ' mode'));
+				},
+				item.mode));
+		return A2(
+			_elm_lang$core$Basics_ops['++'],
+			'Item ',
+			A2(
+				_elm_lang$core$Basics_ops['++'],
+				item.id,
+				A2(
+					_elm_lang$core$Basics_ops['++'],
+					', level ',
+					A2(
+						_elm_lang$core$Basics_ops['++'],
+						_elm_lang$core$Basics$toString(item.level),
+						A2(
+							_elm_lang$core$Basics_ops['++'],
+							mode,
+							A2(
+								_elm_lang$core$Basics_ops['++'],
+								', cannot be positioned at tile (',
+								A2(
+									_elm_lang$core$Basics_ops['++'],
+									_elm_lang$core$Basics$toString(coordinate),
+									A2(
+										_elm_lang$core$Basics_ops['++'],
+										'), because: ',
+										A2(_elm_lang$core$Basics_ops['++'], cause, '. ')))))))));
+	});
+var _user$project$Import$insertItem = F4(
+	function (coordinate, item, pallette, grid) {
+		var newGrid = A3(
+			_user$project$Grid$tileSelected,
+			coordinate,
+			grid,
+			_elm_lang$core$Maybe$Just(item));
+		var placedItems = _user$project$Grid$allPlacedItems(newGrid);
+		var newPallette = A2(_user$project$Pallette$refreshPallette, placedItems, pallette);
+		return {ctor: '_Tuple2', _0: newPallette, _1: newGrid};
+	});
+var _user$project$Import$checkAndInsertItem = F2(
+	function (_p1, _p0) {
+		var _p2 = _p1;
+		var _p10 = _p2._1;
+		var _p9 = _p2._0;
+		var _p3 = _p0;
+		var _p8 = _p3._0;
+		var _p7 = _p3._1;
+		var _p6 = _p3._2;
+		var placable = A3(_user$project$Grid$canPlaceItem, _p9, _p7, _p10);
+		var available = A2(_user$project$Pallette$isItemAvailable, _p8, _p10);
+		var _p4 = {ctor: '_Tuple2', _0: available, _1: placable};
+		if ((_p4.ctor === '_Tuple2') && (_p4._0 === true)) {
+			if (_p4._1 === true) {
+				var _p5 = A4(_user$project$Import$insertItem, _p9, _p10, _p8, _p7);
+				var p = _p5._0;
+				var g = _p5._1;
+				return {ctor: '_Tuple3', _0: p, _1: g, _2: _p6};
+			} else {
+				return {
+					ctor: '_Tuple3',
+					_0: _p8,
+					_1: _p7,
+					_2: {
+						ctor: '::',
+						_0: A3(_user$project$Import$makeError, _p9, _p10, 'it overlaps another item or is outside the grid'),
+						_1: _p6
+					}
+				};
+			}
+		} else {
+			return {
+				ctor: '_Tuple3',
+				_0: _p8,
+				_1: _p7,
+				_2: {
+					ctor: '::',
+					_0: A3(_user$project$Import$makeError, _p9, _p10, 'is not available at this town hall level or all items of this type have been placed'),
+					_1: _p6
+				}
+			};
+		}
+	});
+var _user$project$Import$insertLayoutItems = F3(
+	function (items, pallette, grid) {
+		var startState = {
+			ctor: '_Tuple3',
+			_0: pallette,
+			_1: grid,
+			_2: {ctor: '[]'}
+		};
+		var placedItems = A2(
+			_elm_lang$core$List$map,
+			_user$project$Import$toCoordinateAndPlacedItem(pallette),
+			items);
+		return A3(_elm_lang$core$List$foldl, _user$project$Import$checkAndInsertItem, startState, placedItems);
+	});
+var _user$project$Import$applyImport = F3(
+	function (state, pallette, grid) {
+		var _p11 = state.layout;
+		if (_p11.ctor === 'Just') {
+			var _p12 = A3(_user$project$Import$insertLayoutItems, _p11._0.items, pallette, grid);
+			var p = _p12._0;
+			var g = _p12._1;
+			var errors = _p12._2;
+			return _elm_lang$core$List$isEmpty(errors) ? {
+				ctor: '_Tuple2',
+				_0: {
+					ctor: '_Tuple3',
+					_0: _elm_lang$core$Native_Utils.update(
+						state,
+						{inProgress: false}),
+					_1: p,
+					_2: g
+				},
+				_1: _user$project$ImportExportPort$cancelImport('file-select')
+			} : A4(
+				_user$project$Import$importError,
+				A3(
+					_elm_lang$core$List$foldr,
+					F2(
+						function (x, y) {
+							return A2(_elm_lang$core$Basics_ops['++'], x, y);
+						}),
+					'',
+					errors),
+				state,
+				pallette,
+				grid);
+		} else {
+			return A4(_user$project$Import$importError, 'Failed to complete import. Something expected went wrong.', state, pallette, grid);
+		}
 	});
 var _user$project$Import$processImport = F3(
 	function (data, nextStepCmd, state) {
 		var parseResult = _user$project$LayoutDefinitions$decodeFromJson(data);
-		var _p0 = parseResult;
-		if (_p0.ctor === 'Ok') {
-			var _p1 = _p0._0;
+		var _p13 = parseResult;
+		if (_p13.ctor === 'Ok') {
+			var _p14 = _p13._0;
 			return {
 				ctor: '_Tuple2',
 				_0: _elm_lang$core$Native_Utils.update(
 					state,
 					{
-						layout: _elm_lang$core$Maybe$Just(_p1),
+						layout: _elm_lang$core$Maybe$Just(_p14),
 						error: ''
 					}),
-				_1: nextStepCmd(_p1.townHallLevel)
+				_1: nextStepCmd(_p14.townHallLevel)
 			};
 		} else {
 			return {
 				ctor: '_Tuple2',
 				_0: _elm_lang$core$Native_Utils.update(
 					state,
-					{layout: _elm_lang$core$Maybe$Nothing, error: _p0._0}),
+					{layout: _elm_lang$core$Maybe$Nothing, error: _p13._0}),
 				_1: _elm_lang$core$Platform_Cmd$none
 			};
 		}
@@ -11433,7 +11594,7 @@ var _user$project$Main$update = F2(
 									layoutName: _user$project$Import$importedLayoutName(model.importState),
 									definition: _elm_lang$core$Maybe$Just(_p4),
 									pallette: pP,
-									grid: pG,
+									grid: _user$project$Grid$noTileHover(pG),
 									importState: pIS
 								}),
 							_1: cmd

@@ -15,11 +15,11 @@ import Html exposing (..)
 import Html.Attributes exposing (class, id)
 import Html.Events exposing (onClick)
 
-import Common exposing (Level)
+import Common exposing (Level, Coordinate)
 import ImportExportPort exposing (..)
-import LayoutDefinitions exposing (LayoutDefinition, decodeFromJson)
-import Pallette exposing (Pallette)
-import Grid exposing (Grid)
+import LayoutDefinitions exposing (LayoutItem, LayoutDefinition, decodeFromJson)
+import Pallette exposing (Pallette, PlacedItem, itemSize, isItemAvailable, refreshPallette, currentPalletteItem)
+import Grid exposing (Grid, canPlaceItem, allPlacedItems, tileSelected)
 
 -- TYPES
 
@@ -83,20 +83,108 @@ processImport data nextStepCmd state =
 
 applyImport : ImportState -> Pallette -> Grid -> ((ImportState, Pallette, Grid), Cmd msg)
 applyImport state pallette grid =
--- ERROR CASE
-    --( ( { state | inProgress = True
-    --            , error = "Inavlid base definition..." }
-    --  , pallette
-    --  , grid)
-    --, Cmd.none
-    --)
+  case state.layout of
+    Just layout ->
+      let
+        (p, g, errors) = insertLayoutItems layout.items pallette grid
+      in
+        if List.isEmpty errors
+        then           
+          ( ( { state | inProgress = False }
+            , p
+            , g)
+          , cancelImport "file-select"
+          )
+        else
+          importError (List.foldr (++) "" errors) state pallette grid
+    Nothing ->
+      importError "Failed to complete import. Something expected went wrong." state pallette grid
 
--- SUCCESS CASE
-    ( ( { state | inProgress = False }
-      , pallette
-      , grid)
-    , cancelImport "file-select"
-    )
+insertLayoutItems : List LayoutItem -> Pallette -> Grid -> (Pallette, Grid, List String)
+insertLayoutItems items pallette grid =
+  let
+    placedItems = 
+      List.map (toCoordinateAndPlacedItem pallette) items
+
+    startState = (pallette, grid, [])
+  in
+    List.foldl checkAndInsertItem startState placedItems
+
+checkAndInsertItem : (Coordinate, PlacedItem) -> (Pallette, Grid, List String) -> (Pallette, Grid, List String)
+checkAndInsertItem (coordinate, item) (pallette, grid, errors) =
+  let
+    available = 
+      isItemAvailable pallette item
+
+    placable = 
+      canPlaceItem coordinate grid item
+  in
+    case (available, placable) of
+      (True, True) ->
+        let 
+          (p, g) = insertItem coordinate item pallette grid  
+        in
+          (p, g, errors)
+      (True, False) ->
+        ( pallette
+        , grid
+        , (makeError coordinate item "it overlaps another item or is outside the grid") :: errors
+        )
+      _ ->
+        ( pallette
+        , grid
+        , (makeError coordinate item "is not available at this town hall level or all items of this type have been placed") :: errors
+        )
+
+insertItem : Coordinate -> PlacedItem -> Pallette -> Grid -> (Pallette, Grid)
+insertItem coordinate item pallette grid =
+  let
+    newGrid = tileSelected coordinate grid (Just item)
+    placedItems = allPlacedItems newGrid
+    newPallette = refreshPallette placedItems pallette
+  in
+    (newPallette, newGrid)
+
+makeError : Coordinate -> PlacedItem -> String -> String
+makeError coordinate item cause =
+  let
+    mode =
+      item.mode 
+        |> Maybe.map (\m -> " in " ++ m ++ " mode")
+        |> Maybe.withDefault ""
+      
+  in
+    "Item " ++ 
+    item.id ++ 
+    ", level " ++ 
+    (toString item.level) ++ 
+    mode ++
+    ", cannot be positioned at tile (" ++ 
+    (toString coordinate) ++ 
+    "), because: " ++ 
+    cause ++
+    ". "
+
+toCoordinateAndPlacedItem : Pallette -> LayoutItem -> (Coordinate, PlacedItem)
+toCoordinateAndPlacedItem pallette item =
+  ( (item.position.row, item.position.column)
+  , { id = item.item
+    , level = item.level
+    , mode = item.mode
+    , size = itemSize pallette item.item  
+    }
+  )
+
+
+importError : String -> ImportState -> Pallette -> Grid -> ((ImportState, Pallette, Grid), Cmd msg)
+importError msg state pallette grid =
+  ( ( { state | inProgress = True
+              , error = msg }
+    , pallette
+    , grid)
+  , Cmd.none
+  )
+
 
 -- VIEW
 

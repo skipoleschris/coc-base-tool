@@ -6,6 +6,7 @@ module Grid exposing
   , tileSelected
   , tileHover
   , noTileHover
+  , canPlaceItem
   , allPlacedItems
   , viewGrid
   )

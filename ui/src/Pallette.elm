@@ -4,6 +4,8 @@ module Pallette exposing
   , emptyPallette
   , freshPallette
   , currentPalletteItem
+  , itemSize
+  , isItemAvailable
   , selectItem
   , changeLevelSelection
   , changeModeSelection
@@ -244,6 +246,9 @@ numberConsumed consumptions id =
   Dict.get id consumptions 
     |> Maybe.map (\c -> c.numberPlaced)
     |> Maybe.withDefault 0    
+
+isItemAvailable : Pallette -> PlacedItem -> Bool
+isItemAvailable pallette item = True
 
 -- UPDATE
 

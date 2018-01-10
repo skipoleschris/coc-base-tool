@@ -90,7 +90,7 @@ update msg model =
             , layoutName = importedLayoutName model.importState
             , definition = Just definition 
             , pallette = pP
-            , grid = pG
+            , grid = noTileHover pG
             , importState = pIS
             }
           , cmd
