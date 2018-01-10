@@ -114,6 +114,14 @@ body {
   background-color: white;
 }
 
+.import-error {
+  position: relative;
+  width: 90%;
+  margin: auto;
+  color: red;
+  padding-bottom: 10px;
+}
+
 .visible {
   display: block;
 }

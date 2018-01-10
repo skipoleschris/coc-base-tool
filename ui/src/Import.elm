@@ -13,11 +13,15 @@ import Html.Attributes exposing (class, id)
 import Html.Events exposing (onClick)
 
 import ImportExportPort exposing (..)
+import LayoutDefinitions exposing (LayoutDefinition, decodeFromJson)
+
 
 -- TYPES
 
 type alias ImportState =
   { inProgress : Bool
+  , layout : Maybe LayoutDefinition
+  , error : String
   }
 
 
@@ -25,7 +29,10 @@ type alias ImportState =
 
 initialImportState : ImportState
 initialImportState =
-  { inProgress = False }
+  { inProgress = False 
+  , layout = Nothing
+  , error = "" 
+  }
 
 
 -- UPDATE
@@ -44,9 +51,20 @@ hideImportDialog state =
 
 processImport : String -> ImportState -> (ImportState, Cmd msg)
 processImport data state =
-  ( { state | inProgress = False}
-  , Cmd.none
-  )
+  let
+    parseResult = decodeFromJson data
+  in
+    case parseResult of
+      Ok layout ->
+        ( { state | layout = Just layout
+                  , error = "" }
+        , Cmd.none
+        )
+      Err error ->
+        ( { state | layout = Nothing
+                  , error = error }
+        , Cmd.none
+        )
 
 
 -- VIEW
@@ -58,13 +76,18 @@ importDialog state cancelMsg =
       if state.inProgress
       then "visible"
       else "hidden"
-      
+     
+    showError =
+      if state.error == ""
+      then "hidden"
+      else "visible" 
   in
     div [ class ("import-dialog " ++ visibility) ]
         [ h3 [] [ text "Select File To Import" ]
         , div [ id "file-select"
               , class "file-select" 
               ] []
+        , div [ class ("import-error " ++ showError) ] [ text state.error ]
         , button [ onClick cancelMsg ] [ text "Cancel" ]
         ]
 

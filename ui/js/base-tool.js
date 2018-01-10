@@ -10945,6 +10945,7 @@ var _user$project$Import$initImportDataSubscription = function (msg) {
 };
 var _user$project$Import$importDialog = F2(
 	function (state, cancelMsg) {
+		var showError = _elm_lang$core$Native_Utils.eq(state.error, '') ? 'hidden' : 'visible';
 		var visibility = state.inProgress ? 'visible' : 'hidden';
 		return A2(
 			_elm_lang$html$Html$div,
@@ -10981,31 +10982,62 @@ var _user$project$Import$importDialog = F2(
 					_1: {
 						ctor: '::',
 						_0: A2(
-							_elm_lang$html$Html$button,
+							_elm_lang$html$Html$div,
 							{
 								ctor: '::',
-								_0: _elm_lang$html$Html_Events$onClick(cancelMsg),
+								_0: _elm_lang$html$Html_Attributes$class(
+									A2(_elm_lang$core$Basics_ops['++'], 'import-error ', showError)),
 								_1: {ctor: '[]'}
 							},
 							{
 								ctor: '::',
-								_0: _elm_lang$html$Html$text('Cancel'),
+								_0: _elm_lang$html$Html$text(state.error),
 								_1: {ctor: '[]'}
 							}),
-						_1: {ctor: '[]'}
+						_1: {
+							ctor: '::',
+							_0: A2(
+								_elm_lang$html$Html$button,
+								{
+									ctor: '::',
+									_0: _elm_lang$html$Html_Events$onClick(cancelMsg),
+									_1: {ctor: '[]'}
+								},
+								{
+									ctor: '::',
+									_0: _elm_lang$html$Html$text('Cancel'),
+									_1: {ctor: '[]'}
+								}),
+							_1: {ctor: '[]'}
+						}
 					}
 				}
 			});
 	});
 var _user$project$Import$processImport = F2(
 	function (data, state) {
-		return {
-			ctor: '_Tuple2',
-			_0: _elm_lang$core$Native_Utils.update(
-				state,
-				{inProgress: false}),
-			_1: _elm_lang$core$Platform_Cmd$none
-		};
+		var parseResult = _user$project$LayoutDefinitions$decodeFromJson(data);
+		var _p0 = parseResult;
+		if (_p0.ctor === 'Ok') {
+			return {
+				ctor: '_Tuple2',
+				_0: _elm_lang$core$Native_Utils.update(
+					state,
+					{
+						layout: _elm_lang$core$Maybe$Just(_p0._0),
+						error: ''
+					}),
+				_1: _elm_lang$core$Platform_Cmd$none
+			};
+		} else {
+			return {
+				ctor: '_Tuple2',
+				_0: _elm_lang$core$Native_Utils.update(
+					state,
+					{layout: _elm_lang$core$Maybe$Nothing, error: _p0._0}),
+				_1: _elm_lang$core$Platform_Cmd$none
+			};
+		}
 	});
 var _user$project$Import$hideImportDialog = function (state) {
 	return {
@@ -11025,10 +11057,11 @@ var _user$project$Import$showImportDialog = function (state) {
 		_1: _user$project$ImportExportPort$initImport('file-select')
 	};
 };
-var _user$project$Import$initialImportState = {inProgress: false};
-var _user$project$Import$ImportState = function (a) {
-	return {inProgress: a};
-};
+var _user$project$Import$initialImportState = {inProgress: false, layout: _elm_lang$core$Maybe$Nothing, error: ''};
+var _user$project$Import$ImportState = F3(
+	function (a, b, c) {
+		return {inProgress: a, layout: b, error: c};
+	});
 
 var _user$project$Toolbar$viewToolbar = F3(
 	function (clearLayoutMsg, exportLayoutMsg, startImportMsg) {
