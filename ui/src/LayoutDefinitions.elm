@@ -65,7 +65,7 @@ itemToObject item =
         |> Maybe.withDefault []
   in
     E.object ([ ("position", positionObj)
-            , ("building", E.string item.item)
+            , ("item", E.string item.item)
             , ("level", E.int item.level)
             ] ++ mode)      
 

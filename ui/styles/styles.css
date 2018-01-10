@@ -119,6 +119,7 @@ body {
   width: 90%;
   margin: auto;
   color: red;
+  word-wrap: break-word;
   padding-bottom: 10px;
 }
 

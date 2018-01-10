@@ -9168,7 +9168,7 @@ var _user$project$LayoutDefinitions$itemToObject = function (item) {
 					ctor: '::',
 					_0: {
 						ctor: '_Tuple2',
-						_0: 'building',
+						_0: 'item',
 						_1: _elm_lang$core$Json_Encode$string(item.item)
 					},
 					_1: {
@@ -9317,8 +9317,8 @@ var _user$project$Export$processExport = F3(
 			A2(_elm_lang$core$Maybe$map, _user$project$ImportExportPort$export, data));
 	});
 
-var _user$project$TownHallDefinitions$townHallLevelSelect = F2(
-	function (msg, levels) {
+var _user$project$TownHallDefinitions$townHallLevelSelect = F3(
+	function (msg, levels, selectedLevel) {
 		var optionize = function (x) {
 			return A2(
 				_elm_lang$html$Html$option,
@@ -9326,7 +9326,14 @@ var _user$project$TownHallDefinitions$townHallLevelSelect = F2(
 					ctor: '::',
 					_0: _elm_lang$html$Html_Attributes$value(
 						_elm_lang$core$Basics$toString(x)),
-					_1: {ctor: '[]'}
+					_1: {
+						ctor: '::',
+						_0: _elm_lang$html$Html_Attributes$selected(
+							_elm_lang$core$Native_Utils.eq(
+								_elm_lang$core$Maybe$Just(x),
+								selectedLevel)),
+						_1: {ctor: '[]'}
+					}
 				},
 				{
 					ctor: '::',
@@ -11014,20 +11021,36 @@ var _user$project$Import$importDialog = F2(
 				}
 			});
 	});
-var _user$project$Import$processImport = F2(
-	function (data, state) {
+var _user$project$Import$applyImport = F3(
+	function (state, pallette, grid) {
+		return {
+			ctor: '_Tuple2',
+			_0: {
+				ctor: '_Tuple3',
+				_0: _elm_lang$core$Native_Utils.update(
+					state,
+					{inProgress: false}),
+				_1: pallette,
+				_2: grid
+			},
+			_1: _user$project$ImportExportPort$cancelImport('file-select')
+		};
+	});
+var _user$project$Import$processImport = F3(
+	function (data, nextStepCmd, state) {
 		var parseResult = _user$project$LayoutDefinitions$decodeFromJson(data);
 		var _p0 = parseResult;
 		if (_p0.ctor === 'Ok') {
+			var _p1 = _p0._0;
 			return {
 				ctor: '_Tuple2',
 				_0: _elm_lang$core$Native_Utils.update(
 					state,
 					{
-						layout: _elm_lang$core$Maybe$Just(_p0._0),
+						layout: _elm_lang$core$Maybe$Just(_p1),
 						error: ''
 					}),
-				_1: _elm_lang$core$Platform_Cmd$none
+				_1: nextStepCmd(_p1.townHallLevel)
 			};
 		} else {
 			return {
@@ -11056,6 +11079,22 @@ var _user$project$Import$showImportDialog = function (state) {
 			{inProgress: true}),
 		_1: _user$project$ImportExportPort$initImport('file-select')
 	};
+};
+var _user$project$Import$importedLayoutName = function (state) {
+	return A2(
+		_elm_lang$core$Maybe$andThen,
+		function (name) {
+			return _elm_lang$core$Native_Utils.eq(name, '') ? _elm_lang$core$Maybe$Nothing : _elm_lang$core$Maybe$Just(name);
+		},
+		A2(
+			_elm_lang$core$Maybe$map,
+			function (layout) {
+				return layout.layoutName;
+			},
+			state.layout));
+};
+var _user$project$Import$importInProgress = function (state) {
+	return state.inProgress && (!_elm_lang$core$Native_Utils.eq(state.layout, _elm_lang$core$Maybe$Nothing));
 };
 var _user$project$Import$initialImportState = {inProgress: false, layout: _elm_lang$core$Maybe$Nothing, error: ''};
 var _user$project$Import$ImportState = F3(
@@ -11227,7 +11266,7 @@ var _user$project$Main$updateSelectedTile = F2(
 			model,
 			{grid: finalGrid, pallette: newPallette});
 	});
-var _user$project$Main$model = {
+var _user$project$Main$initialModel = {
 	grid: _user$project$Grid$makeGrid(_user$project$Grid$defaultSize),
 	townHallLevels: {
 		ctor: '::',
@@ -11273,7 +11312,7 @@ var _user$project$Main$model = {
 	importState: _user$project$Import$initialImportState,
 	debug: _elm_lang$core$Maybe$Nothing
 };
-var _user$project$Main$init = {ctor: '_Tuple2', _0: _user$project$Main$model, _1: _elm_lang$core$Platform_Cmd$none};
+var _user$project$Main$init = {ctor: '_Tuple2', _0: _user$project$Main$initialModel, _1: _elm_lang$core$Platform_Cmd$none};
 var _user$project$Main$Model = F8(
 	function (a, b, c, d, e, f, g, h) {
 		return {grid: a, townHallLevels: b, townHallLevel: c, layoutName: d, definition: e, pallette: f, importState: g, debug: h};
@@ -11281,44 +11320,51 @@ var _user$project$Main$Model = F8(
 var _user$project$Main$LayoutNameChange = function (a) {
 	return {ctor: 'LayoutNameChange', _0: a};
 };
-var _user$project$Main$layoutTitle = A2(
-	_elm_lang$html$Html$div,
-	{
-		ctor: '::',
-		_0: _elm_lang$html$Html_Attributes$class('layout-title'),
-		_1: {ctor: '[]'}
-	},
-	{
-		ctor: '::',
-		_0: A2(
-			_elm_lang$html$Html$label,
-			{ctor: '[]'},
-			{
-				ctor: '::',
-				_0: _elm_lang$html$Html$text('Layout Title: '),
-				_1: {ctor: '[]'}
-			}),
-		_1: {
+var _user$project$Main$layoutTitle = function (layoutName) {
+	var name = A2(_elm_lang$core$Maybe$withDefault, '', layoutName);
+	return A2(
+		_elm_lang$html$Html$div,
+		{
+			ctor: '::',
+			_0: _elm_lang$html$Html_Attributes$class('layout-title'),
+			_1: {ctor: '[]'}
+		},
+		{
 			ctor: '::',
 			_0: A2(
-				_elm_lang$html$Html$input,
+				_elm_lang$html$Html$label,
+				{ctor: '[]'},
 				{
 					ctor: '::',
-					_0: _elm_lang$html$Html_Attributes$size(50),
-					_1: {
+					_0: _elm_lang$html$Html$text('Layout Title: '),
+					_1: {ctor: '[]'}
+				}),
+			_1: {
+				ctor: '::',
+				_0: A2(
+					_elm_lang$html$Html$input,
+					{
 						ctor: '::',
-						_0: _elm_lang$html$Html_Attributes$placeholder('Enter name...'),
+						_0: _elm_lang$html$Html_Attributes$size(50),
 						_1: {
 							ctor: '::',
-							_0: _elm_lang$html$Html_Events$onInput(_user$project$Main$LayoutNameChange),
-							_1: {ctor: '[]'}
+							_0: _elm_lang$html$Html_Attributes$value(name),
+							_1: {
+								ctor: '::',
+								_0: _elm_lang$html$Html_Attributes$placeholder('Enter name...'),
+								_1: {
+									ctor: '::',
+									_0: _elm_lang$html$Html_Events$onInput(_user$project$Main$LayoutNameChange),
+									_1: {ctor: '[]'}
+								}
+							}
 						}
-					}
-				},
-				{ctor: '[]'}),
-			_1: {ctor: '[]'}
-		}
-	});
+					},
+					{ctor: '[]'}),
+				_1: {ctor: '[]'}
+			}
+		});
+};
 var _user$project$Main$ImportLayout = function (a) {
 	return {ctor: 'ImportLayout', _0: a};
 };
@@ -11355,15 +11401,9 @@ var _user$project$Main$update = F2(
 		var _p2 = msg;
 		switch (_p2.ctor) {
 			case 'ChangeTownHallLevel':
-				var _p3 = _p2._0;
 				return {
 					ctor: '_Tuple2',
-					_0: _elm_lang$core$Native_Utils.update(
-						model,
-						{
-							townHallLevel: _elm_lang$core$Result$toMaybe(
-								_elm_lang$core$String$toInt(_p3))
-						}),
+					_0: model,
 					_1: A2(
 						_elm_lang$core$Maybe$withDefault,
 						_elm_lang$core$Platform_Cmd$none,
@@ -11371,22 +11411,48 @@ var _user$project$Main$update = F2(
 							_elm_lang$core$Maybe$map,
 							_user$project$TownHallDefinitions$loadTownHallDefinition(_user$project$Main$TownHallDefinitionLoaded),
 							_elm_lang$core$Result$toMaybe(
-								_elm_lang$core$String$toInt(_p3))))
+								_elm_lang$core$String$toInt(_p2._0))))
 				};
 			case 'TownHallDefinitionLoaded':
 				if (_p2._0.ctor === 'Ok') {
 					var _p4 = _p2._0._0;
-					return {
-						ctor: '_Tuple2',
-						_0: _elm_lang$core$Native_Utils.update(
-							model,
-							{
-								definition: _elm_lang$core$Maybe$Just(_p4),
-								pallette: _user$project$Pallette$freshPallette(_p4),
-								grid: _user$project$Grid$makeGrid(_user$project$Grid$defaultSize)
-							}),
-						_1: _elm_lang$core$Platform_Cmd$none
-					};
+					if (_user$project$Import$importInProgress(model.importState)) {
+						var grid = _user$project$Grid$makeGrid(_user$project$Grid$defaultSize);
+						var pallette = _user$project$Pallette$freshPallette(_p4);
+						var _p3 = A3(_user$project$Import$applyImport, model.importState, pallette, grid);
+						var pIS = _p3._0._0;
+						var pP = _p3._0._1;
+						var pG = _p3._0._2;
+						var cmd = _p3._1;
+						return {
+							ctor: '_Tuple2',
+							_0: _elm_lang$core$Native_Utils.update(
+								model,
+								{
+									townHallLevel: _elm_lang$core$Maybe$Just(_p4.level),
+									layoutName: _user$project$Import$importedLayoutName(model.importState),
+									definition: _elm_lang$core$Maybe$Just(_p4),
+									pallette: pP,
+									grid: pG,
+									importState: pIS
+								}),
+							_1: cmd
+						};
+					} else {
+						return {
+							ctor: '_Tuple2',
+							_0: _elm_lang$core$Native_Utils.update(
+								model,
+								{
+									townHallLevel: _elm_lang$core$Maybe$Just(_p4.level),
+									layoutName: _elm_lang$core$Maybe$Nothing,
+									definition: _elm_lang$core$Maybe$Just(_p4),
+									pallette: _user$project$Pallette$freshPallette(_p4),
+									grid: _user$project$Grid$makeGrid(_user$project$Grid$defaultSize)
+								}),
+							_1: _elm_lang$core$Platform_Cmd$none
+						};
+					}
 				} else {
 					return {
 						ctor: '_Tuple2',
@@ -11486,7 +11552,10 @@ var _user$project$Main$update = F2(
 				return A2(
 					_user$project$Main$processImportStep,
 					model,
-					_user$project$Import$processImport(_p2._0));
+					A2(
+						_user$project$Import$processImport,
+						_p2._0,
+						_user$project$TownHallDefinitions$loadTownHallDefinition(_user$project$Main$TownHallDefinitionLoaded)));
 			default:
 				var _p5 = _p2._0;
 				return {
@@ -11509,10 +11578,10 @@ var _user$project$Main$view = function (model) {
 		{ctor: '[]'},
 		{
 			ctor: '::',
-			_0: A2(_user$project$TownHallDefinitions$townHallLevelSelect, _user$project$Main$ChangeTownHallLevel, model.townHallLevels),
+			_0: A3(_user$project$TownHallDefinitions$townHallLevelSelect, _user$project$Main$ChangeTownHallLevel, model.townHallLevels, model.townHallLevel),
 			_1: {
 				ctor: '::',
-				_0: _user$project$Main$layoutTitle,
+				_0: _user$project$Main$layoutTitle(model.layoutName),
 				_1: {
 					ctor: '::',
 					_0: A4(_user$project$Grid$viewGrid, _user$project$Main$TileClicked, _user$project$Main$TileHover, _user$project$Main$RemoveTileHover, model.grid),

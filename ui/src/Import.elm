@@ -1,9 +1,12 @@
 module Import exposing
   ( ImportState
   , initialImportState
+  , importInProgress
+  , importedLayoutName
   , showImportDialog
   , hideImportDialog
   , processImport
+  , applyImport
   , importDialog
   , initImportDataSubscription
   )
@@ -12,9 +15,11 @@ import Html exposing (..)
 import Html.Attributes exposing (class, id)
 import Html.Events exposing (onClick)
 
+import Common exposing (Level)
 import ImportExportPort exposing (..)
 import LayoutDefinitions exposing (LayoutDefinition, decodeFromJson)
-
+import Pallette exposing (Pallette)
+import Grid exposing (Grid)
 
 -- TYPES
 
@@ -34,6 +39,16 @@ initialImportState =
   , error = "" 
   }
 
+importInProgress : ImportState -> Bool
+importInProgress state =
+  state.inProgress && state.layout /= Nothing
+
+importedLayoutName : ImportState -> Maybe String
+importedLayoutName state =
+  state.layout
+    |> Maybe.map (\layout -> layout.layoutName)
+    |> Maybe.andThen (\name -> if name == "" then Nothing else Just name)
+
 
 -- UPDATE
 
@@ -49,8 +64,8 @@ hideImportDialog state =
   , cancelImport "file-select"
   )
 
-processImport : String -> ImportState -> (ImportState, Cmd msg)
-processImport data state =
+processImport : String -> (Level -> Cmd msg) -> ImportState -> (ImportState, Cmd msg)
+processImport data nextStepCmd state =
   let
     parseResult = decodeFromJson data
   in
@@ -58,7 +73,7 @@ processImport data state =
       Ok layout ->
         ( { state | layout = Just layout
                   , error = "" }
-        , Cmd.none
+        , nextStepCmd layout.townHallLevel
         )
       Err error ->
         ( { state | layout = Nothing
@@ -66,6 +81,22 @@ processImport data state =
         , Cmd.none
         )
 
+applyImport : ImportState -> Pallette -> Grid -> ((ImportState, Pallette, Grid), Cmd msg)
+applyImport state pallette grid =
+-- ERROR CASE
+    --( ( { state | inProgress = True
+    --            , error = "Inavlid base definition..." }
+    --  , pallette
+    --  , grid)
+    --, Cmd.none
+    --)
+
+-- SUCCESS CASE
+    ( ( { state | inProgress = False }
+      , pallette
+      , grid)
+    , cancelImport "file-select"
+    )
 
 -- VIEW
 

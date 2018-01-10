@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Clash of Clans - Base Tool</title>
+    <link rel="stylesheet" href="styles/styles.css">
+  </head>
+  <body>
+    <script type="text/javascript" src="js/importexport.js"></script>
+    <script type="text/javascript" src="/_compile/src/base-tool.elm"></script>
+    <script type="text/javascript">
+      var app = Elm.Main.fullscreen();
+
+      app.ports.export.subscribe(function(data) {
+        var elements = data.split("|");
+        downloadAsJson(elements[0], elements[1]);
+      });
+
+      app.ports.initImport.subscribe(function(id) {
+        createFileUpload(id, function(data) {
+          app.ports.importData.send(data);
+        });
+      });
+
+      app.ports.cancelImport.subscribe(function(id) {
+        removeFileUpload(id);
+      });
+    </script>
+
+  </body>
+</html>

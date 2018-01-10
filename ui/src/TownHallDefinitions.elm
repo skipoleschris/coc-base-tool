@@ -140,11 +140,13 @@ loadTownHallDefinition msg level =
 
 -- VIEW
 
-townHallLevelSelect : (String -> msg) -> List Level -> Html msg
-townHallLevelSelect msg levels =
+townHallLevelSelect : (String -> msg) -> List Level -> Maybe Level -> Html msg
+townHallLevelSelect msg levels selectedLevel =
   let 
     optionize x =
-      option [ value (toString x)] 
+      option [ value (toString x)
+             , selected (Just x == selectedLevel)
+             ] 
         [ text (toString x) ]
   in
     div [ class "town-hall-level" ] [
