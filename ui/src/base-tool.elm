@@ -70,6 +70,12 @@ update msg model =
       , changeTownHallLevel level (loadTownHallDefinition TownHallDefinitionLoaded)
       )
 
+    TownHallDefinitionLoaded (Ok definition) ->
+      importOrInitialiseLayout definition 
+                               newModelFromDefinition
+                               newModelFromImport
+                               model.importState
+
     TownHallDefinitionLoaded (Err err) ->
       ( initialModel
       , Cmd.none
@@ -99,30 +105,6 @@ update msg model =
       ( { model | layout = changeLayoutName name model.layout }
       , Cmd.none
       )
-
-
-    TownHallDefinitionLoaded (Ok definition) ->
-      if importInProgress model.importState
-      then
-        completeImportProcess definition model.importState
-      else 
-        ( newModelFromDefinition definition
-        , Cmd.none
-        )
-
-completeImportProcess : TownHallDefinition -> ImportState -> (Model, Cmd Msg)
-completeImportProcess definition importState =
-  let
-    design = emptyDesign definition
-    
-    ((pIS, pD), cmd) = applyImport importState design  
-  in
-    ( newModelFromImport definition 
-                         (importedLayoutName importState)
-                         pD
-                         pIS
-    , cmd
-    )
 
 
 -- VIEW

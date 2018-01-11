@@ -7,6 +7,7 @@ module Import exposing
   , beginImportWorkflow
   , handleImportMessage
   , applyImport
+  , importOrInitialiseLayout
   , importDialog
   , initImportDataSubscription
   )
@@ -17,8 +18,9 @@ import Html.Events exposing (onClick)
 
 import Common exposing (Level, Coordinate)
 import ImportExportPort exposing (..)
+import TownHallDefinitions exposing (TownHallDefinition)
 import LayoutDefinitions exposing (LayoutItem, LayoutDefinition, decodeFromJson)
-import Designer exposing (Design, removeHover)
+import Designer exposing (Design, emptyDesign, removeHover)
 import Pallette exposing (Pallette, PlacedItem, itemSize, isItemAvailable, refreshPallette, currentPalletteItem)
 import Grid exposing (Grid, canPlaceItem, allPlacedItems, tileSelected, noTileHover)
 
@@ -202,6 +204,30 @@ importError msg state design =
     )
   , Cmd.none
   )
+
+importOrInitialiseLayout : TownHallDefinition ->
+                           (TownHallDefinition -> a) ->
+                           (TownHallDefinition -> Maybe String -> Design -> ImportState -> a) ->
+                           ImportState ->
+                           (a, Cmd msg)
+importOrInitialiseLayout definition notImporting importing importState =
+  if importInProgress importState
+  then
+    completeImportProcess definition importing importState
+  else                           
+    (notImporting definition, Cmd.none)
+
+completeImportProcess : TownHallDefinition -> 
+                        (TownHallDefinition -> Maybe String -> Design -> ImportState -> a) ->
+                        ImportState -> 
+                        (a, Cmd msg)
+completeImportProcess definition complete importState =
+  let
+    design = emptyDesign definition
+    
+    ((pIS, pD), cmd) = applyImport importState design  
+  in
+    (complete definition (importedLayoutName importState) pD pIS, cmd)
 
 
 -- VIEW
