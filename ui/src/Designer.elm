@@ -6,6 +6,7 @@ module Designer exposing
   , clearDesign
   , itemsInLayout
   , removeHover
+  , insertLayoutItems
   , handleDesignerMessage
   , viewDesignEditor
   )
@@ -70,6 +71,83 @@ itemsInLayout design =
 removeHover : Design -> Design
 removeHover design =
   { design | grid = noTileHover design.grid }
+
+
+-- BUILD DESIGN FROM LAYOUT ITEMS
+
+insertLayoutItems : List LayoutItem -> Design -> (Design, List String)
+insertLayoutItems items design =
+  let
+    placedItems = 
+      List.map (toCoordinateAndPlacedItem design.pallette) items
+
+    startState = (design, [])
+  in
+    List.foldl checkAndInsertItem startState placedItems
+
+checkAndInsertItem : (Coordinate, PlacedItem) -> (Design, List String) -> (Design, List String)
+checkAndInsertItem (coordinate, item) (design, errors) =
+  let
+    available = 
+      isItemAvailable design.pallette item
+
+    placable = 
+      canPlaceItem coordinate design.grid item
+  in
+    case (available, placable) of
+      (True, True) ->
+        let 
+          d = insertItem coordinate item design  
+        in
+          (d, errors)
+      (True, False) ->
+        ( design
+        , (makeError coordinate item "it overlaps another item or is outside the grid") :: errors
+        )
+      _ ->
+        ( design
+        , (makeError coordinate item "is not available at this town hall level or all items of this type have been placed") :: errors
+        )
+
+insertItem : Coordinate -> PlacedItem -> Design -> Design
+insertItem coordinate item design =
+  let
+    newGrid = tileSelected coordinate design.grid (Just item)
+    placedItems = allPlacedItems newGrid
+    newPallette = refreshPallette placedItems design.pallette
+  in
+    { pallette = newPallette, grid = newGrid }
+
+makeError : Coordinate -> PlacedItem -> String -> String
+makeError coordinate item cause =
+  let
+    mode =
+      item.mode 
+        |> Maybe.map (\m -> " in " ++ m ++ " mode")
+        |> Maybe.withDefault ""
+      
+  in
+    "Item " ++ 
+    item.id ++ 
+    ", level " ++ 
+    (toString item.level) ++ 
+    mode ++
+    ", cannot be positioned at tile (" ++ 
+    (toString coordinate) ++ 
+    "), because: " ++ 
+    cause ++
+    ". "
+
+toCoordinateAndPlacedItem : Pallette -> LayoutItem -> (Coordinate, PlacedItem)
+toCoordinateAndPlacedItem pallette item =
+  ( (item.position.row, item.position.column)
+  , { id = item.item
+    , level = item.level
+    , mode = item.mode
+    , size = itemSize pallette item.item  
+    }
+  )
+
 
 -- UPDATE
 
