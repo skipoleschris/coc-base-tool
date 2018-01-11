@@ -24,13 +24,11 @@ main =
 
 -- MODEL
 
-
 type alias Model =
   { layout : Layout
   , definition : Maybe TownHallDefinition
   , design : Design
   , importState : ImportState
-  , debug : Maybe Error
   }
 
 initialModel : Model
@@ -39,7 +37,6 @@ initialModel =
   , definition = Nothing
   , design = newDesign
   , importState = initialImportState
-  , debug = Nothing
   }
 
 
@@ -60,9 +57,35 @@ type Msg = ChangeTownHallLevel String
          | ImportLayout String
          | LayoutNameChange String
 
+designMessages : DesignMessages Msg
+designMessages =
+  { itemSelectMsg = PalletteItemSelected
+  , levelChangeMsg = PalletteLevelChange
+  , modeChangeMsg = PalletteModeChange
+  , tileClickMsg = TileClicked
+  , tileHoverMsg = TileHover
+  , removeHoverMsg = RemoveTileHover
+  }
+
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
   case msg of
+    ClearLayout ->
+      ( { model | design = clearDesign model.definition }
+      , Cmd.none
+      )
+
+    ExportLayout ->
+      ( model
+      , processExport model.layout (itemsInLayout model.design))
+
+    LayoutNameChange name ->
+      ( { model | layout = changeLayoutName name model.layout }
+      , Cmd.none
+      )
+
+
+
     ChangeTownHallLevel level ->
       ( model
       , String.toInt level 
@@ -103,7 +126,6 @@ update msg model =
           layout = emptyLayout
         , definition = Nothing
         , design = newDesign
-        , debug = Just err 
         }
       , Cmd.none
       )
@@ -141,14 +163,6 @@ update msg model =
       , Cmd.none
       )
 
-    ClearLayout ->
-      ( clearLayout model
-      , Cmd.none
-      )
-
-    ExportLayout ->
-      ( model
-      , processExport model.layout.layoutName model.layout.townHallLevel (layoutItems model.design.grid))
 
     StartImportLayout ->
       processImportStep model showImportDialog
@@ -159,10 +173,6 @@ update msg model =
     ImportLayout data ->
       processImportStep model (processImport data (loadTownHallDefinition TownHallDefinitionLoaded))
 
-    LayoutNameChange name ->
-      ( { model | layout = changeLayoutName name model.layout }
-      , Cmd.none
-      )
 
 updateSelectedTile : Coordinate -> Model -> Model
 updateSelectedTile coordinate model =
@@ -181,17 +191,6 @@ hoverOverTile coordinate model =
   in
     { model | design = { grid = newGrid, pallette = model.design.pallette } }
 
-clearLayout : Model -> Model
-clearLayout model =
-  case model.definition of
-    Nothing ->
-      { model | design = { grid = makeGrid defaultSize, pallette = emptyPallette } }
-    Just definition ->
-      { model | design = {
-        pallette = freshPallette definition 
-      , grid = makeGrid defaultSize }
-      }
-
 processImportStep : Model -> (ImportState -> (ImportState, Cmd msg)) -> (Model, Cmd msg)
 processImportStep model f =
   let
@@ -208,11 +207,10 @@ view : Model -> Html Msg
 view model =
   div [] 
     [ viewLayout ChangeTownHallLevel LayoutNameChange model.layout
-    , viewDesignEditor PalletteItemSelected PalletteLevelChange PalletteModeChange TileClicked TileHover RemoveTileHover model.design
+    , viewDesignEditor designMessages model.design
     , viewToolbar ClearLayout ExportLayout StartImportLayout
     , importDialog model.importState CancelImportLayout
     ]
-
 
 
 -- SUBSCRIPTIONS
@@ -227,8 +225,5 @@ subscriptions model =
 init : (Model, Cmd Msg)
 init = (initialModel, Cmd.none)
 
-
-
 -- TODO LIST
--- Import layout
 -- Code refactoring & clean up

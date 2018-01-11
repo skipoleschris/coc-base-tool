@@ -3,26 +3,27 @@ module Export exposing
   )
 
 import Common exposing (Level)
+import Layouts exposing (Layout)
 import LayoutDefinitions exposing (LayoutItem, encodeToJson)
 import ImportExportPort exposing (..)
 
 
 -- UPDATE
 
-processExport : Maybe String -> Maybe Level -> List LayoutItem -> Cmd msg
-processExport layoutName townHallLevel items =
+processExport : Layout -> List LayoutItem -> Cmd msg
+processExport layout items =
   let
     name =
-      layoutName
+      layout.layoutName
         |> Maybe.withDefault ""
 
     filename =
-      layoutName
+      layout.layoutName
         |> Maybe.map (\n -> n ++ ".json")
         |> Maybe.withDefault "layout.json"
 
     data =
-      townHallLevel
+      layout.townHallLevel
         |> Maybe.map (\thLevel -> encodeToJson name thLevel items)
         |> Maybe.map (\json -> filename ++ "|" ++ json)
   in
