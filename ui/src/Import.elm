@@ -18,8 +18,9 @@ import Html.Events exposing (onClick)
 import Common exposing (Level, Coordinate)
 import ImportExportPort exposing (..)
 import LayoutDefinitions exposing (LayoutItem, LayoutDefinition, decodeFromJson)
+import Designer exposing (Design, removeHover)
 import Pallette exposing (Pallette, PlacedItem, itemSize, isItemAvailable, refreshPallette, currentPalletteItem)
-import Grid exposing (Grid, canPlaceItem, allPlacedItems, tileSelected)
+import Grid exposing (Grid, canPlaceItem, allPlacedItems, tileSelected, noTileHover)
 
 -- TYPES
 
@@ -100,69 +101,67 @@ processImport data nextStepCmd state =
         , Cmd.none
         )
 
-applyImport : ImportState -> Pallette -> Grid -> ((ImportState, Pallette, Grid), Cmd msg)
-applyImport state pallette grid =
+applyImport : ImportState -> Design -> ((ImportState, Design), Cmd msg)
+applyImport state design =
   case state.layout of
     Just layout ->
       let
-        (p, g, errors) = insertLayoutItems layout.items pallette grid
+        (d, errors) = insertLayoutItems layout.items design
       in
         if List.isEmpty errors
         then           
           ( ( { state | inProgress = False }
-            , p
-            , g)
+            , removeHover d
+            )
           , cancelImport "file-select"
           )
         else
-          importError (List.foldr (++) "" errors) state pallette grid
+          importError (List.foldr (++) "" errors) state design
     Nothing ->
-      importError "Failed to complete import. Something expected went wrong." state pallette grid
+      importError "Failed to complete import. Something expected went wrong." state design
 
-insertLayoutItems : List LayoutItem -> Pallette -> Grid -> (Pallette, Grid, List String)
-insertLayoutItems items pallette grid =
+insertLayoutItems : List LayoutItem -> Design -> (Design, List String)
+insertLayoutItems items design =
   let
     placedItems = 
-      List.map (toCoordinateAndPlacedItem pallette) items
+      List.map (toCoordinateAndPlacedItem design.pallette) items
 
-    startState = (pallette, grid, [])
+    startState = (design, [])
   in
     List.foldl checkAndInsertItem startState placedItems
 
-checkAndInsertItem : (Coordinate, PlacedItem) -> (Pallette, Grid, List String) -> (Pallette, Grid, List String)
-checkAndInsertItem (coordinate, item) (pallette, grid, errors) =
+checkAndInsertItem : (Coordinate, PlacedItem) -> (Design, List String) -> (Design, List String)
+checkAndInsertItem (coordinate, item) (design, errors) =
   let
     available = 
-      isItemAvailable pallette item
+      isItemAvailable design.pallette item
 
     placable = 
-      canPlaceItem coordinate grid item
+      canPlaceItem coordinate design.grid item
   in
     case (available, placable) of
       (True, True) ->
         let 
-          (p, g) = insertItem coordinate item pallette grid  
+          d = insertItem coordinate item design  
         in
-          (p, g, errors)
+          (d, errors)
       (True, False) ->
-        ( pallette
-        , grid
+        ( design
         , (makeError coordinate item "it overlaps another item or is outside the grid") :: errors
         )
       _ ->
-        ( pallette
-        , grid
+        ( design
         , (makeError coordinate item "is not available at this town hall level or all items of this type have been placed") :: errors
         )
 
-insertItem : Coordinate -> PlacedItem -> Pallette -> Grid -> (Pallette, Grid)
-insertItem coordinate item pallette grid =
+insertItem : Coordinate -> PlacedItem -> Design -> Design
+insertItem coordinate item design =
   let
-    newGrid = tileSelected coordinate grid (Just item)
+    newGrid = tileSelected coordinate design.grid (Just item)
     placedItems = allPlacedItems newGrid
-    newPallette = refreshPallette placedItems pallette
+    newPallette = refreshPallette placedItems design.pallette
   in
-    (newPallette, newGrid)
+    { pallette = newPallette, grid = newGrid }
 
 makeError : Coordinate -> PlacedItem -> String -> String
 makeError coordinate item cause =
@@ -195,12 +194,12 @@ toCoordinateAndPlacedItem pallette item =
   )
 
 
-importError : String -> ImportState -> Pallette -> Grid -> ((ImportState, Pallette, Grid), Cmd msg)
-importError msg state pallette grid =
+importError : String -> ImportState -> Design -> ((ImportState, Design), Cmd msg)
+importError msg state design =
   ( ( { state | inProgress = True
               , error = msg }
-    , pallette
-    , grid)
+    , design
+    )
   , Cmd.none
   )
 

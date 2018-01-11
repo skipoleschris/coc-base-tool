@@ -1,14 +1,10 @@
 import Html exposing (..)
-import Html.Attributes exposing (rel, href, class, size, placeholder, id, value)
-import Html.Events exposing (onInput, onClick)
 import Http exposing (Error)
 
 import Common exposing (..)
 import TownHallDefinitions exposing (TownHallDefinition, loadTownHallDefinition)
 import Layouts exposing (..)
 import Designer exposing (..)
-import Pallette exposing (..)
-import Grid exposing (..)
 import Toolbar exposing (..)
 import Import exposing (..)
 import Export exposing (..)
@@ -39,35 +35,51 @@ initialModel =
   , importState = initialImportState
   }
 
+newModelFromDefinition : TownHallDefinition -> Model
+newModelFromDefinition definition =
+  { layout = newLayout definition.level Nothing
+  , definition = Just definition 
+  , design = emptyDesign definition
+  , importState = initialImportState
+  }
+
+newModelFromImport : TownHallDefinition -> Maybe String -> Design -> ImportState -> Model
+newModelFromImport definition layoutName design importState =
+  { layout = newLayout definition.level layoutName
+  , definition = Just definition 
+  , design = design
+  , importState = importState
+  }
+
 
 -- UPDATE
 
 type Msg = ChangeTownHallLevel String
          | TownHallDefinitionLoaded (Result Http.Error TownHallDefinition)
-         | PalletteItemSelected String
-         | PalletteLevelChange String String
-         | PalletteModeChange String String
-         | TileClicked Coordinate
-         | TileHover Coordinate
-         | RemoveTileHover
+         | DesignUpdate DesignerMessage
          | ClearLayout
          | ExportLayout
          | ImportLayout ImportMessage
          | LayoutNameChange String
 
-designMessages : DesignMessages Msg
-designMessages =
-  { itemSelectMsg = PalletteItemSelected
-  , levelChangeMsg = PalletteLevelChange
-  , modeChangeMsg = PalletteModeChange
-  , tileClickMsg = TileClicked
-  , tileHoverMsg = TileHover
-  , removeHoverMsg = RemoveTileHover
-  }
-
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
   case msg of
+    ChangeTownHallLevel level ->
+      ( model
+      , changeTownHallLevel level (loadTownHallDefinition TownHallDefinitionLoaded)
+      )
+
+    TownHallDefinitionLoaded (Err err) ->
+      ( initialModel
+      , Cmd.none
+      )
+
+    DesignUpdate designMsg ->
+      ( { model | design = handleDesignerMessage designMsg model.design }
+      , Cmd.none
+      )
+
     ClearLayout ->
       ( { model | design = clearDesign model.definition }
       , Cmd.none
@@ -89,102 +101,28 @@ update msg model =
       )
 
 
-    ChangeTownHallLevel level ->
-      ( model
-      , String.toInt level 
-          |> Result.toMaybe 
-          |> Maybe.map (loadTownHallDefinition TownHallDefinitionLoaded)
-          |> Maybe.withDefault Cmd.none
-      )
-
     TownHallDefinitionLoaded (Ok definition) ->
       if importInProgress model.importState
       then
-        let
-          pallette = freshPallette definition
-
-          grid = makeGrid defaultSize
-          
-          ((pIS, pP, pG), cmd) = applyImport model.importState pallette grid  
-        in
-          ( { model | 
-              layout = newLayout definition.level (importedLayoutName model.importState) model.layout
-            , definition = Just definition
-            , design = { pallette =pP, grid = noTileHover pG } 
-            , importState = pIS
-            }
-          , cmd
-          )
+        completeImportProcess definition model.importState
       else 
-        ( { model | 
-            layout = newLayout definition.level Nothing model.layout
-          , definition = Just definition 
-          , design = { pallette = freshPallette definition, grid = makeGrid defaultSize }
-          }
+        ( newModelFromDefinition definition
         , Cmd.none
         )
 
-    TownHallDefinitionLoaded (Err err) ->
-      ( { model | 
-          layout = emptyLayout
-        , definition = Nothing
-        , design = newDesign
-        }
-      , Cmd.none
-      )
-
-    PalletteItemSelected id ->
-      ( { model | design = { pallette = selectItem id model.design.pallette, grid = model.design.grid } }
-      , Cmd.none
-      )
-
-    PalletteLevelChange id level ->
-      (
-        String.toInt level |> Result.toMaybe |> Maybe.map (\lvl ->
-          { model | design = { pallette = changeLevelSelection id lvl model.design.pallette, grid = model.design.grid } }
-        ) |> Maybe.withDefault model
-      , Cmd.none
-      )
-
-    PalletteModeChange id mode ->  
-      ( { model | design = { pallette = changeModeSelection id mode model.design.pallette, grid = model.design.grid } }
-      , Cmd.none
-      )
-
-    TileClicked coordinate ->
-      ( updateSelectedTile coordinate model
-      , Cmd.none
-      )
-
-    TileHover coordinate ->
-      ( hoverOverTile coordinate model
-      , Cmd.none
-      )
-
-    RemoveTileHover ->
-      ( { model | design = { grid = noTileHover model.design.grid, pallette = model.design.pallette } }
-      , Cmd.none
-      )
-
-
-
-updateSelectedTile : Coordinate -> Model -> Model
-updateSelectedTile coordinate model =
+completeImportProcess : TownHallDefinition -> ImportState -> (Model, Cmd Msg)
+completeImportProcess definition importState =
   let
-    newGrid = tileSelected coordinate model.design.grid (currentPalletteItem model.design.pallette)
-    placedItems = allPlacedItems newGrid
-    newPallette = refreshPallette placedItems model.design.pallette
-    finalGrid = tileHover coordinate newGrid (currentPalletteItem newPallette)
+    design = emptyDesign definition
+    
+    ((pIS, pD), cmd) = applyImport importState design  
   in
-    { model | design = { grid = finalGrid, pallette = newPallette } }
-
-hoverOverTile : Coordinate -> Model -> Model
-hoverOverTile coordinate model =     
-  let
-    newGrid = tileHover coordinate model.design.grid (currentPalletteItem model.design.pallette)
-  in
-    { model | design = { grid = newGrid, pallette = model.design.pallette } }
-
+    ( newModelFromImport definition 
+                         (importedLayoutName importState)
+                         pD
+                         pIS
+    , cmd
+    )
 
 
 -- VIEW
@@ -193,7 +131,7 @@ view : Model -> Html Msg
 view model =
   div [] 
     [ viewLayout ChangeTownHallLevel LayoutNameChange model.layout
-    , viewDesignEditor designMessages model.design
+    , viewDesignEditor DesignUpdate model.design
     , viewToolbar ClearLayout ExportLayout ImportLayout
     , importDialog model.importState ImportLayout
     ]
@@ -213,3 +151,4 @@ init = (initialModel, Cmd.none)
 
 -- TODO LIST
 -- Code refactoring & clean up
+-- Walls mode

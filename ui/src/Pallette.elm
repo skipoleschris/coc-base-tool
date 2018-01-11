@@ -395,8 +395,10 @@ makePalleteItem clickMsg levelMsg modeMsg pallette item =
               , br [] []
               , text ((toString placedCount) ++ " of " ++ (toString item.quantity) ++ " placed")
               ]
-        , viewLevels (levelMsg item.id) option availableLevels
-        , viewModes (modeMsg item.id) option item.modes
+        , div [] 
+              [ viewLevels (levelMsg item.id) option availableLevels
+              , viewModes (modeMsg item.id) option item.modes
+              ]
         ]
 
 itemImage : PalletteItem -> Maybe PalletteOption -> String

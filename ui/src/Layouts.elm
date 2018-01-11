@@ -3,6 +3,7 @@ module Layouts exposing
   , emptyLayout
   , newLayout
   , changeLayoutName
+  , changeTownHallLevel
   , viewLayout
   )
 
@@ -34,15 +35,21 @@ emptyLayout =
 
 -- UPDATE
 
-newLayout : Level -> Maybe String -> Layout -> Layout
-newLayout townHallLevel layoutName layout =
-  { layout | townHallLevel = Just townHallLevel
-           , layoutName = layoutName }
+newLayout : Level -> Maybe String -> Layout
+newLayout townHallLevel layoutName =
+  { emptyLayout | townHallLevel = Just townHallLevel
+                , layoutName = layoutName }
 
 changeLayoutName : String -> Layout -> Layout
 changeLayoutName newName layout =
   { layout | layoutName = if newName == "" then Nothing else Just newName }
 
+changeTownHallLevel : String -> (Level -> Cmd msg) -> Cmd msg 
+changeTownHallLevel level msg =
+  String.toInt level 
+          |> Result.toMaybe 
+          |> Maybe.map msg
+          |> Maybe.withDefault Cmd.none
 
 -- VIEW
 

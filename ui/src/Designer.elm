@@ -1,9 +1,12 @@
 module Designer exposing 
   ( Design
-  , DesignMessages
+  , DesignerMessage
   , newDesign
+  , emptyDesign
   , clearDesign
   , itemsInLayout
+  , removeHover
+  , handleDesignerMessage
   , viewDesignEditor
   )
 
@@ -32,6 +35,14 @@ type alias DesignMessages msg =
   , removeHoverMsg : msg
   }
 
+type DesignerMessage = PalletteItemSelected String
+                     | PalletteLevelChange String String
+                     | PalletteModeChange String String
+                     | TileClicked Coordinate
+                     | TileHover Coordinate
+                     | RemoveTileHover
+
+
  -- MODEL
 
 newDesign : Design
@@ -56,13 +67,80 @@ itemsInLayout : Design -> List LayoutItem
 itemsInLayout design =
   layoutItems design.grid
 
+removeHover : Design -> Design
+removeHover design =
+  { design | grid = noTileHover design.grid }
+
+-- UPDATE
+
+handleDesignerMessage : DesignerMessage -> Design -> Design
+handleDesignerMessage msg design =
+  case msg of
+    PalletteItemSelected id ->
+      { design | pallette = selectItem id design.pallette }
+
+    PalletteLevelChange id level ->
+      changePalletteLevel id level design
+
+    PalletteModeChange id mode ->  
+      { design | pallette = changeModeSelection id mode design.pallette }
+
+    TileClicked coordinate ->
+      updateSelectedTile coordinate design
+
+    TileHover coordinate ->
+      hoverOverTile coordinate design
+
+    RemoveTileHover ->
+      { design | grid = noTileHover design.grid }
+
+changePalletteLevel : String -> String -> Design -> Design
+changePalletteLevel id level design =
+  String.toInt level
+    |> Result.toMaybe 
+    |> Maybe.map (\lvl ->
+        { design | pallette = changeLevelSelection id lvl design.pallette }
+      ) 
+    |> Maybe.withDefault design
+
+updateSelectedTile : Coordinate -> Design -> Design
+updateSelectedTile coordinate design =
+  let
+    newGrid = tileSelected coordinate design.grid (currentPalletteItem design.pallette)
+    placedItems = allPlacedItems newGrid
+    newPallette = refreshPallette placedItems design.pallette
+    finalGrid = tileHover coordinate newGrid (currentPalletteItem newPallette)
+  in
+    { pallette = newPallette, grid = finalGrid } 
+
+hoverOverTile : Coordinate -> Design -> Design
+hoverOverTile coordinate design =     
+  let
+    newGrid = tileHover coordinate design.grid (currentPalletteItem design.pallette)
+  in
+    { design | grid = newGrid }
+
 
 -- VIEW
 
-viewDesignEditor : DesignMessages msg -> 
-                   Design -> 
-                   Html msg
-viewDesignEditor m design =
-  div [] [ viewPallette m.itemSelectMsg m.levelChangeMsg m.modeChangeMsg design.pallette
-         , viewGrid m.tileClickMsg m.tileHoverMsg m.removeHoverMsg design.grid
+viewDesignEditor : (DesignerMessage -> msg) -> Design -> Html msg
+viewDesignEditor msg design =
+  let
+    itemSelectMsg = PalletteItemSelected >> msg
+
+    levelChangeMsg =
+      curry <| uncurry PalletteLevelChange >> msg
+
+    modeChangeMsg = 
+      curry <| uncurry PalletteModeChange >> msg
+
+    tileClickMsg = TileClicked >> msg
+
+    tileHoverMsg = TileHover >> msg
+
+    removeHoverMsg = msg RemoveTileHover
+  in
+      
+  div [] [ viewPallette itemSelectMsg levelChangeMsg modeChangeMsg design.pallette
+         , viewGrid tileClickMsg tileHoverMsg removeHoverMsg design.grid
          ]

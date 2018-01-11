@@ -70,7 +70,7 @@ body {
 
 .pallette-label {
   width: 50px;
-  float: left;
+  display: inline-block;
   padding-top: 5px;
 }
 
