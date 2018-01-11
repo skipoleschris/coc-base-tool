@@ -52,9 +52,7 @@ type Msg = ChangeTownHallLevel String
          | RemoveTileHover
          | ClearLayout
          | ExportLayout
-         | StartImportLayout
-         | CancelImportLayout
-         | ImportLayout String
+         | ImportLayout ImportMessage
          | LayoutNameChange String
 
 designMessages : DesignMessages Msg
@@ -79,11 +77,16 @@ update msg model =
       ( model
       , processExport model.layout (itemsInLayout model.design))
 
+    ImportLayout importMsg ->
+      handleImportMessage importMsg 
+                          (loadTownHallDefinition TownHallDefinitionLoaded) 
+                          model.importState
+        |> Tuple.mapFirst (\state -> { model | importState = state })
+
     LayoutNameChange name ->
       ( { model | layout = changeLayoutName name model.layout }
       , Cmd.none
       )
-
 
 
     ChangeTownHallLevel level ->
@@ -164,15 +167,6 @@ update msg model =
       )
 
 
-    StartImportLayout ->
-      processImportStep model showImportDialog
-
-    CancelImportLayout ->
-      processImportStep model hideImportDialog
-
-    ImportLayout data ->
-      processImportStep model (processImport data (loadTownHallDefinition TownHallDefinitionLoaded))
-
 
 updateSelectedTile : Coordinate -> Model -> Model
 updateSelectedTile coordinate model =
@@ -191,14 +185,6 @@ hoverOverTile coordinate model =
   in
     { model | design = { grid = newGrid, pallette = model.design.pallette } }
 
-processImportStep : Model -> (ImportState -> (ImportState, Cmd msg)) -> (Model, Cmd msg)
-processImportStep model f =
-  let
-    (state, cmd) = f model.importState
-  in
-    ( { model | importState = state }
-    , cmd
-    )
 
 
 -- VIEW
@@ -208,8 +194,8 @@ view model =
   div [] 
     [ viewLayout ChangeTownHallLevel LayoutNameChange model.layout
     , viewDesignEditor designMessages model.design
-    , viewToolbar ClearLayout ExportLayout StartImportLayout
-    , importDialog model.importState CancelImportLayout
+    , viewToolbar ClearLayout ExportLayout ImportLayout
+    , importDialog model.importState ImportLayout
     ]
 
 

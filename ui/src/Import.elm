@@ -1,11 +1,11 @@
 module Import exposing
   ( ImportState
+  , ImportMessage
   , initialImportState
   , importInProgress
   , importedLayoutName
-  , showImportDialog
-  , hideImportDialog
-  , processImport
+  , beginImportWorkflow
+  , handleImportMessage
   , applyImport
   , importDialog
   , initImportDataSubscription
@@ -29,6 +29,10 @@ type alias ImportState =
   , error : String
   }
 
+type ImportMessage = StartImportLayout
+                   | CancelImportLayout
+                   | CompleteImportLayout String
+
 
 -- MODEL
 
@@ -51,6 +55,21 @@ importedLayoutName state =
 
 
 -- UPDATE
+
+beginImportWorkflow : ImportMessage
+beginImportWorkflow = StartImportLayout
+
+handleImportMessage : ImportMessage -> (Level -> Cmd msg) -> ImportState -> (ImportState, Cmd msg)
+handleImportMessage msg nextStepCmd state =
+  case msg of
+    StartImportLayout ->
+      showImportDialog state
+
+    CancelImportLayout ->
+      hideImportDialog state
+
+    CompleteImportLayout data ->
+      processImport data nextStepCmd state
 
 showImportDialog : ImportState -> (ImportState, Cmd msg)
 showImportDialog state =
@@ -188,7 +207,7 @@ importError msg state pallette grid =
 
 -- VIEW
 
-importDialog : ImportState -> msg -> Html msg
+importDialog : ImportState -> (ImportMessage -> msg) -> Html msg
 importDialog state cancelMsg =
   let
     visibility = 
@@ -207,14 +226,12 @@ importDialog state cancelMsg =
               , class "file-select" 
               ] []
         , div [ class ("import-error " ++ showError) ] [ text state.error ]
-        , button [ onClick cancelMsg ] [ text "Cancel" ]
+        , button [ onClick (cancelMsg CancelImportLayout) ] [ text "Cancel" ]
         ]
 
 
 -- SUBSCRIPTION
 
-initImportDataSubscription : (String -> msg) -> Sub msg
+initImportDataSubscription : (ImportMessage -> msg) -> Sub msg
 initImportDataSubscription msg =
-  importData msg
-
-
+  importData (CompleteImportLayout >> msg)
