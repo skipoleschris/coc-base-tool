@@ -4,17 +4,11 @@ module TownHallDefinitions exposing
   , Mode
   , Walls
   , loadTownHallDefinition
-  , townHallLevelSelect
   )
 
-import Maybe exposing (..)
 import Http exposing (get, send, Error)
 import Json.Decode exposing (int, string, nullable, list, Decoder)
 import Json.Decode.Pipeline exposing (decode, required, optional, hardcoded)
-
-import Html exposing (..)
-import Html.Attributes exposing (value, disabled, selected, class)
-import Html.Events exposing (onInput)
 
 import Common exposing (Level, Size)
 
@@ -136,24 +130,3 @@ loadTownHallDefinition msg level =
     request = Http.get url townHallDefinitionDecoder  
   in
     Http.send msg request
-
-
--- VIEW
-
-townHallLevelSelect : (String -> msg) -> List Level -> Maybe Level -> Html msg
-townHallLevelSelect msg levels selectedLevel =
-  let 
-    optionize x =
-      option [ value (toString x)
-             , selected (Just x == selectedLevel)
-             ] 
-        [ text (toString x) ]
-  in
-    div [ class "town-hall-level" ] [
-      label []
-        [ text "Town Hall Level: "
-        , select [ onInput msg ] 
-            (option [ disabled True, selected True ] [ text "Select Level" ] :: (List.map optionize levels))
-        ]
-    ]
-

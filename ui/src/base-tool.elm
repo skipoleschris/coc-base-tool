@@ -4,7 +4,9 @@ import Html.Events exposing (onInput, onClick)
 import Http exposing (Error)
 
 import Common exposing (..)
-import TownHallDefinitions exposing (TownHallDefinition, loadTownHallDefinition, townHallLevelSelect)
+import TownHallDefinitions exposing (TownHallDefinition, loadTownHallDefinition)
+import Layouts exposing (..)
+import Designer exposing (..)
 import Pallette exposing (..)
 import Grid exposing (..)
 import Toolbar exposing (..)
@@ -24,24 +26,18 @@ main =
 
 
 type alias Model =
-  { grid : Grid
-  , townHallLevels : List Level
-  , townHallLevel : Maybe Level
-  , layoutName : Maybe String
+  { layout : Layout
   , definition : Maybe TownHallDefinition
-  , pallette : Pallette
+  , design : Design
   , importState : ImportState
   , debug : Maybe Error
   }
 
 initialModel : Model
 initialModel = 
-  { grid = makeGrid defaultSize
-  , townHallLevels = [11, 10, 9, 8, 7, 6, 5, 4, 3]
-  , townHallLevel = Nothing
-  , layoutName = Nothing
+  { layout = emptyLayout
   , definition = Nothing
-  , pallette = emptyPallette
+  , design = newDesign
   , importState = initialImportState
   , debug = Nothing
   }
@@ -86,51 +82,47 @@ update msg model =
           ((pIS, pP, pG), cmd) = applyImport model.importState pallette grid  
         in
           ( { model | 
-              townHallLevel = Just definition.level
-            , layoutName = importedLayoutName model.importState
-            , definition = Just definition 
-            , pallette = pP
-            , grid = noTileHover pG
+              layout = newLayout definition.level (importedLayoutName model.importState) model.layout
+            , definition = Just definition
+            , design = { pallette =pP, grid = noTileHover pG } 
             , importState = pIS
             }
           , cmd
           )
       else 
         ( { model | 
-            townHallLevel = Just definition.level
-          , layoutName = Nothing
+            layout = newLayout definition.level Nothing model.layout
           , definition = Just definition 
-          , pallette = freshPallette definition
-          , grid = makeGrid defaultSize
+          , design = { pallette = freshPallette definition, grid = makeGrid defaultSize }
           }
         , Cmd.none
         )
 
     TownHallDefinitionLoaded (Err err) ->
       ( { model | 
-          townHallLevel = Nothing
+          layout = emptyLayout
         , definition = Nothing
-        , pallette = emptyPallette
+        , design = newDesign
         , debug = Just err 
         }
       , Cmd.none
       )
 
     PalletteItemSelected id ->
-      ( { model | pallette = selectItem id model.pallette }
+      ( { model | design = { pallette = selectItem id model.design.pallette, grid = model.design.grid } }
       , Cmd.none
       )
 
     PalletteLevelChange id level ->
       (
         String.toInt level |> Result.toMaybe |> Maybe.map (\lvl ->
-          { model | pallette = changeLevelSelection id lvl model.pallette }
+          { model | design = { pallette = changeLevelSelection id lvl model.design.pallette, grid = model.design.grid } }
         ) |> Maybe.withDefault model
       , Cmd.none
       )
 
     PalletteModeChange id mode ->  
-      ( { model | pallette = changeModeSelection id mode model.pallette }
+      ( { model | design = { pallette = changeModeSelection id mode model.design.pallette, grid = model.design.grid } }
       , Cmd.none
       )
 
@@ -145,7 +137,7 @@ update msg model =
       )
 
     RemoveTileHover ->
-      ( { model | grid = noTileHover model.grid }
+      ( { model | design = { grid = noTileHover model.design.grid, pallette = model.design.pallette } }
       , Cmd.none
       )
 
@@ -156,7 +148,7 @@ update msg model =
 
     ExportLayout ->
       ( model
-      , processExport model.layoutName model.townHallLevel (layoutItems model.grid))
+      , processExport model.layout.layoutName model.layout.townHallLevel (layoutItems model.design.grid))
 
     StartImportLayout ->
       processImportStep model showImportDialog
@@ -168,36 +160,36 @@ update msg model =
       processImportStep model (processImport data (loadTownHallDefinition TownHallDefinitionLoaded))
 
     LayoutNameChange name ->
-      ( { model | layoutName = if name == "" then Nothing else Just name }
+      ( { model | layout = changeLayoutName name model.layout }
       , Cmd.none
       )
 
 updateSelectedTile : Coordinate -> Model -> Model
 updateSelectedTile coordinate model =
   let
-    newGrid = tileSelected coordinate model.grid (currentPalletteItem model.pallette)
+    newGrid = tileSelected coordinate model.design.grid (currentPalletteItem model.design.pallette)
     placedItems = allPlacedItems newGrid
-    newPallette = refreshPallette placedItems model.pallette
+    newPallette = refreshPallette placedItems model.design.pallette
     finalGrid = tileHover coordinate newGrid (currentPalletteItem newPallette)
   in
-    { model | grid = finalGrid, pallette = newPallette }
+    { model | design = { grid = finalGrid, pallette = newPallette } }
 
 hoverOverTile : Coordinate -> Model -> Model
 hoverOverTile coordinate model =     
   let
-    newGrid = tileHover coordinate model.grid (currentPalletteItem model.pallette)
+    newGrid = tileHover coordinate model.design.grid (currentPalletteItem model.design.pallette)
   in
-    { model | grid = newGrid }
+    { model | design = { grid = newGrid, pallette = model.design.pallette } }
 
 clearLayout : Model -> Model
 clearLayout model =
   case model.definition of
     Nothing ->
-      { model | grid = makeGrid defaultSize }
+      { model | design = { grid = makeGrid defaultSize, pallette = emptyPallette } }
     Just definition ->
-      { model |
+      { model | design = {
         pallette = freshPallette definition 
-      , grid = makeGrid defaultSize 
+      , grid = makeGrid defaultSize }
       }
 
 processImportStep : Model -> (ImportState -> (ImportState, Cmd msg)) -> (Model, Cmd msg)
@@ -215,29 +207,11 @@ processImportStep model f =
 view : Model -> Html Msg
 view model =
   div [] 
-    [ townHallLevelSelect ChangeTownHallLevel model.townHallLevels model.townHallLevel
-    , layoutTitle model.layoutName
-    , viewGrid TileClicked TileHover RemoveTileHover model.grid
-    , viewPallette PalletteItemSelected PalletteLevelChange PalletteModeChange model.pallette
+    [ viewLayout ChangeTownHallLevel LayoutNameChange model.layout
+    , viewDesignEditor PalletteItemSelected PalletteLevelChange PalletteModeChange TileClicked TileHover RemoveTileHover model.design
     , viewToolbar ClearLayout ExportLayout StartImportLayout
     , importDialog model.importState CancelImportLayout
     ]
-
-layoutTitle : Maybe String -> Html Msg
-layoutTitle layoutName =
-  let
-    name =
-      Maybe.withDefault "" layoutName
-  in
-      
-  div [ class "layout-title" ]
-      [ label [] [ text "Layout Title: " ]
-      , input [ size 50
-              , value name
-              , placeholder "Enter name..."
-              , onInput LayoutNameChange ] 
-              []
-      ]
 
 
 
