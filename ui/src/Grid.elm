@@ -17,7 +17,7 @@ import Html.Attributes exposing (class, style)
 import Html.Events exposing (onClick, onMouseOver, onMouseOut)
 
 import Common exposing (..)
-import Pallette exposing (PlacedItem)
+import DesignerTypes exposing (..)
 import LayoutDefinitions exposing (..)
 
 -- TYPES

@@ -1,6 +1,5 @@
 module Pallette exposing
   ( Pallette
-  , PlacedItem
   , emptyPallette
   , freshPallette
   , currentPalletteItem
@@ -20,6 +19,7 @@ import Html.Events exposing (onInput, onClick)
 
 import Common exposing (..)
 import TownHallDefinitions exposing (..)
+import DesignerTypes exposing (..)
 
 
 -- TYPES
@@ -64,13 +64,6 @@ type alias Consumption =
   }
 
 type alias Consumptions = Dict String Consumption
-
-type alias PlacedItem =
-  { id : String
-  , level : Level
-  , mode : Maybe String
-  , size : Size
-  }
 
 
 -- HELPER FUNCTIONS

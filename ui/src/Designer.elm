@@ -14,6 +14,7 @@ module Designer exposing
 import Html exposing (..)
 
 import Common exposing (Coordinate)
+import DesignerTypes exposing (..)
 import Pallette exposing (..)
 import Grid exposing (..)
 import LayoutDefinitions exposing (LayoutItem)
@@ -97,7 +98,7 @@ checkAndInsertItem (coordinate, item) (design, errors) =
     case (available, placable) of
       (True, True) ->
         let 
-          d = insertItem coordinate item design  
+          d = insertItem coordinate (Just item) design  
         in
           (d, errors)
       (True, False) ->
@@ -109,10 +110,10 @@ checkAndInsertItem (coordinate, item) (design, errors) =
         , (makeError coordinate item "is not available at this town hall level or all items of this type have been placed") :: errors
         )
 
-insertItem : Coordinate -> PlacedItem -> Design -> Design
+insertItem : Coordinate -> Maybe PlacedItem -> Design -> Design
 insertItem coordinate item design =
   let
-    newGrid = tileSelected coordinate design.grid (Just item)
+    newGrid = tileSelected coordinate design.grid item
     placedItems = allPlacedItems newGrid
     newPallette = refreshPallette placedItems design.pallette
   in
@@ -184,12 +185,9 @@ changePalletteLevel id level design =
 updateSelectedTile : Coordinate -> Design -> Design
 updateSelectedTile coordinate design =
   let
-    newGrid = tileSelected coordinate design.grid (currentPalletteItem design.pallette)
-    placedItems = allPlacedItems newGrid
-    newPallette = refreshPallette placedItems design.pallette
-    finalGrid = tileHover coordinate newGrid (currentPalletteItem newPallette)
+    updated = insertItem coordinate (currentPalletteItem design.pallette) design
   in
-    { pallette = newPallette, grid = finalGrid } 
+    { updated | grid = tileHover coordinate updated.grid (currentPalletteItem updated.pallette) } 
 
 hoverOverTile : Coordinate -> Design -> Design
 hoverOverTile coordinate design =     
