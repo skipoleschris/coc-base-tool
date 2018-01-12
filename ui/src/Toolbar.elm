@@ -24,9 +24,9 @@ type ToolbarMessage = ToggleWallDrawingMode
 
 -- MODEL
 
-initialToolbar : ToolbarState
-initialToolbar = 
-  { wallDrawingMode = True }
+initialToolbar : Bool -> ToolbarState
+initialToolbar wallMode = 
+  { wallDrawingMode = wallMode }
 
 
 -- UPDATE

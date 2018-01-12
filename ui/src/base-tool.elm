@@ -34,7 +34,7 @@ initialModel =
   , definition = Nothing
   , design = newDesign
   , importState = initialImportState
-  , toolbarState = initialToolbar
+  , toolbarState = initialToolbar True
   }
 
 newModelFromDefinition : TownHallDefinition -> Model
@@ -43,7 +43,7 @@ newModelFromDefinition definition =
   , definition = Just definition 
   , design = emptyDesign definition
   , importState = initialImportState
-  , toolbarState = initialToolbar
+  , toolbarState = initialToolbar True
   }
 
 newModelFromImport : TownHallDefinition -> Maybe String -> Design -> ImportState -> Model
@@ -52,7 +52,7 @@ newModelFromImport definition layoutName design importState =
   , definition = Just definition 
   , design = design
   , importState = importState
-  , toolbarState = initialToolbar
+  , toolbarState = initialToolbar design.wallDrawing.enabled
   }
 
 
@@ -92,7 +92,8 @@ update msg model =
       )
 
     ClearLayout ->
-      ( { model | design = clearDesign model.definition }
+      ( { model | design = clearDesign model.definition 
+                , toolbarState = initialToolbar True }
       , Cmd.none
       )
 
@@ -112,9 +113,13 @@ update msg model =
       )
 
     ToolbarChange toolbarMsg ->
-      ( { model | toolbarState = updateToolbar toolbarMsg model.toolbarState }
-      , Cmd.none
-      )
+      let
+        toolbarState = updateToolbar toolbarMsg model.toolbarState
+      in
+        ( { model | toolbarState = toolbarState
+                  , design = setWallDrawing toolbarState.wallDrawingMode model.design }
+        , Cmd.none
+        )
 
 
 -- VIEW

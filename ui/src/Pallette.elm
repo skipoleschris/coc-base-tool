@@ -5,6 +5,7 @@ module Pallette exposing
   , currentPalletteItem
   , itemSize
   , isItemAvailable
+  , isWallSelected
   , selectItem
   , changeLevelSelection
   , changeModeSelection
@@ -242,6 +243,12 @@ numberConsumed consumptions id =
 
 isItemAvailable : Pallette -> PlacedItem -> Bool
 isItemAvailable pallette item = True
+
+isWallSelected : Pallette -> Bool
+isWallSelected pallette =
+  pallette.selected
+    |> Maybe.map (String.startsWith "wall")
+    |> Maybe.withDefault False  
 
 -- UPDATE
 

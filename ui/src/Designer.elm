@@ -8,6 +8,7 @@ module Designer exposing
   , removeHover
   , insertLayoutItems
   , handleDesignerMessage
+  , setWallDrawing
   , viewDesignEditor
   )
 
@@ -23,18 +24,18 @@ import TownHallDefinitions exposing (TownHallDefinition)
 
 -- TYPES
 
+type alias WallDrawing =
+  { enabled : Bool
+  , active : Bool
+  , erase : Bool
+  , lastStart : Maybe Coordinate
+  , lastEnd : Maybe Coordinate
+  }
+
 type alias Design =
   { pallette : Pallette
   , grid : Grid
-  }
-
-type alias DesignMessages msg =
-  { itemSelectMsg : (String -> msg)
-  , levelChangeMsg : (String -> String -> msg)
-  , modeChangeMsg : (String -> String -> msg)
-  , tileClickMsg : (Coordinate -> msg)
-  , tileHoverMsg : (Coordinate -> msg)
-  , removeHoverMsg : msg
+  , wallDrawing : WallDrawing
   }
 
 type DesignerMessage = PalletteItemSelected String
@@ -43,20 +44,33 @@ type DesignerMessage = PalletteItemSelected String
                      | TileClicked Coordinate
                      | TileHover Coordinate
                      | RemoveTileHover
+                     | WallDrawOn Coordinate
+                     | WallDrawOff
 
 
  -- MODEL
+
+newWallDrawing : WallDrawing
+newWallDrawing =
+  { enabled = True
+  , active = False
+  , erase = False 
+  , lastStart = Nothing 
+  , lastEnd = Nothing
+  }
 
 newDesign : Design
 newDesign =  
   { pallette = emptyPallette
   , grid = makeGrid defaultSize
+  , wallDrawing = newWallDrawing
   }
 
 emptyDesign : TownHallDefinition -> Design
 emptyDesign definition =
   { pallette = freshPallette definition
   , grid = makeGrid defaultSize
+  , wallDrawing = newWallDrawing
   }
 
 clearDesign : Maybe TownHallDefinition -> Design
@@ -117,7 +131,9 @@ insertItem coordinate item design =
     placedItems = allPlacedItems newGrid
     newPallette = refreshPallette placedItems design.pallette
   in
-    { pallette = newPallette, grid = newGrid }
+    { design | pallette = newPallette
+             , grid = newGrid 
+    }
 
 makeError : Coordinate -> PlacedItem -> String -> String
 makeError coordinate item cause =
@@ -173,6 +189,12 @@ handleDesignerMessage msg design =
     RemoveTileHover ->
       { design | grid = noTileHover design.grid }
 
+    WallDrawOn coordinate ->
+      startWallDrawing coordinate design
+
+    WallDrawOff ->
+      cancelWallDrawing design
+
 changePalletteLevel : String -> String -> Design -> Design
 changePalletteLevel id level design =
   String.toInt level
@@ -184,18 +206,105 @@ changePalletteLevel id level design =
 
 updateSelectedTile : Coordinate -> Design -> Design
 updateSelectedTile coordinate design =
+  cleaningUpWallDrawing doUpdateSelectedTile coordinate design
+
+doUpdateSelectedTile : Coordinate -> Design -> Design
+doUpdateSelectedTile coordinate design =
   let
-    updated = insertItem coordinate (currentPalletteItem design.pallette) design
-  in
-    { updated | grid = tileHover coordinate updated.grid (currentPalletteItem updated.pallette) } 
+      updated = insertItem coordinate (currentPalletteItem design.pallette) design
+    in
+      { updated | grid = tileHover coordinate updated.grid (currentPalletteItem updated.pallette) } 
 
 hoverOverTile : Coordinate -> Design -> Design
 hoverOverTile coordinate design =     
   let
-    newGrid = tileHover coordinate design.grid (currentPalletteItem design.pallette)
-  in
-    { design | grid = newGrid }
+    updatedDesign = 
+      drawWallsIfRequired coordinate design
 
+    newGrid = 
+      tileHover coordinate updatedDesign.grid (currentPalletteItem updatedDesign.pallette)
+  in
+    { updatedDesign | grid = newGrid }
+
+setWallDrawing : Bool -> Design -> Design
+setWallDrawing state design =
+  { design | wallDrawing = { enabled = state
+                           , active = False
+                           , erase = False
+                           , lastStart = Nothing 
+                           , lastEnd = Nothing }}
+
+cancelWallDrawing : Design -> Design
+cancelWallDrawing design =
+  let
+    wallDrawing = design.wallDrawing
+  in
+    { design | wallDrawing = { wallDrawing | active = False
+                                           , lastEnd = wallDrawing.lastStart } }          
+
+startWallDrawing : Coordinate -> Design -> Design
+startWallDrawing coordinate design =
+  let
+    tileIsBlank = isBlankTile coordinate design.grid
+
+    tileIsWall = isWallTile coordinate design.grid
+
+    canBeActive = isWallSelected design.pallette && (tileIsBlank || tileIsWall)
+
+    erase = tileIsWall
+
+    existingWallDrawing = design.wallDrawing
+
+    start =
+      if canBeActive then Just coordinate else Nothing
+
+    updated = { existingWallDrawing | active = canBeActive
+                                    , erase = erase
+                                    , lastStart = start }
+
+    updatedDesign =
+      if canBeActive
+      then doUpdateSelectedTile coordinate design
+      else design
+  in
+    { updatedDesign | wallDrawing = updated }          
+
+cleaningUpWallDrawing : (Coordinate -> Design -> Design) -> Coordinate -> Design -> Design
+cleaningUpWallDrawing f coordinate design =
+  let
+    updatedDesign =
+      if Just coordinate == design.wallDrawing.lastEnd
+      then design
+      else f coordinate design      
+  in
+    cleanUpWallDrawing updatedDesign
+
+cleanUpWallDrawing : Design -> Design
+cleanUpWallDrawing design =
+  let
+    wallDrawing = design.wallDrawing
+
+    updated = { wallDrawing | lastStart = Nothing
+                            , lastEnd = Nothing }
+  in
+    { design | wallDrawing = updated }
+
+drawWallsIfRequired : Coordinate -> Design -> Design
+drawWallsIfRequired coordinate design =
+  let
+    wallDrawing = design.wallDrawing
+
+    drawingWalls = wallDrawing.enabled && wallDrawing.active
+
+    canDrawWall = (not wallDrawing.erase) && 
+                  isBlankTile coordinate design.grid &&
+                  isWallSelected design.pallette
+
+    canEraseWall = wallDrawing.erase && isWallTile coordinate design.grid
+  in
+    if drawingWalls && (canDrawWall || canEraseWall)
+    then doUpdateSelectedTile coordinate design  
+    else design
 
 -- VIEW
 
@@ -215,8 +324,12 @@ viewDesignEditor msg design =
     tileHoverMsg = TileHover >> msg
 
     removeHoverMsg = msg RemoveTileHover
+
+    wallDrawOnMsg = WallDrawOn >> msg
+
+    wallDrawOffMsg = msg WallDrawOff
   in
       
   div [] [ viewPallette itemSelectMsg levelChangeMsg modeChangeMsg design.pallette
-         , viewGrid tileClickMsg tileHoverMsg removeHoverMsg design.grid
+         , viewGrid tileClickMsg tileHoverMsg removeHoverMsg wallDrawOnMsg wallDrawOffMsg design.grid
          ]
