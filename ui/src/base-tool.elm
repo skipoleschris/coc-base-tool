@@ -1,5 +1,8 @@
 import Html exposing (..)
+import Html.Events exposing (on)
 import Http exposing (Error)
+
+import Json.Decode as Json
 
 import Common exposing (..)
 import TownHallDefinitions exposing (TownHallDefinition, loadTownHallDefinition)
@@ -140,12 +143,16 @@ view model =
     , viewDesignEditor DesignUpdate model.design
     , viewToolbar ClearLayout ExportLayout ImportLayout ToolbarChange model.toolbarState
     , importDialog model.importState ImportLayout
-    , foo
+    , foo model
     ]
 
-foo : Html Msg
+foo : Model -> Html Msg
 foo model =
-  div [ onMouseOver MouseOverTest ] [ text model.testMsg ]
+  div [ onMouseOverWithButtonState MouseOverTest ] [ text model.testMsg ]
+
+onMouseOverWithButtonState : msg -> Attribute msg
+onMouseOverWithButtonState message =
+  on "mouseOver" (Json.succeed message)
 
 -- SUBSCRIPTIONS
 
