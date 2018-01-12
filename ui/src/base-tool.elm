@@ -25,6 +25,7 @@ type alias Model =
   , definition : Maybe TownHallDefinition
   , design : Design
   , importState : ImportState
+  , toolbarState : ToolbarState
   }
 
 initialModel : Model
@@ -33,6 +34,7 @@ initialModel =
   , definition = Nothing
   , design = newDesign
   , importState = initialImportState
+  , toolbarState = initialToolbar
   }
 
 newModelFromDefinition : TownHallDefinition -> Model
@@ -41,6 +43,7 @@ newModelFromDefinition definition =
   , definition = Just definition 
   , design = emptyDesign definition
   , importState = initialImportState
+  , toolbarState = initialToolbar
   }
 
 newModelFromImport : TownHallDefinition -> Maybe String -> Design -> ImportState -> Model
@@ -49,6 +52,7 @@ newModelFromImport definition layoutName design importState =
   , definition = Just definition 
   , design = design
   , importState = importState
+  , toolbarState = initialToolbar
   }
 
 
@@ -61,6 +65,7 @@ type Msg = ChangeTownHallLevel String
          | ExportLayout
          | ImportLayout ImportMessage
          | LayoutNameChange String
+         | ToolbarChange ToolbarMessage
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
@@ -106,6 +111,11 @@ update msg model =
       , Cmd.none
       )
 
+    ToolbarChange toolbarMsg ->
+      ( { model | toolbarState = updateToolbar toolbarMsg model.toolbarState }
+      , Cmd.none
+      )
+
 
 -- VIEW
 
@@ -114,7 +124,7 @@ view model =
   div [] 
     [ viewLayout ChangeTownHallLevel LayoutNameChange model.layout
     , viewDesignEditor DesignUpdate model.design
-    , viewToolbar ClearLayout ExportLayout ImportLayout
+    , viewToolbar ClearLayout ExportLayout ImportLayout ToolbarChange model.toolbarState
     , importDialog model.importState ImportLayout
     ]
 
