@@ -1,8 +1,5 @@
 import Html exposing (..)
-import Html.Events exposing (on)
 import Http exposing (Error)
-
-import Json.Decode as Json
 
 import Common exposing (..)
 import TownHallDefinitions exposing (TownHallDefinition, loadTownHallDefinition)
@@ -29,7 +26,6 @@ type alias Model =
   , design : Design
   , importState : ImportState
   , toolbarState : ToolbarState
-  , testMsg : String
   }
 
 initialModel : Model
@@ -39,7 +35,6 @@ initialModel =
   , design = newDesign
   , importState = initialImportState
   , toolbarState = initialToolbar True
-  , testMsg = "Not over"
   }
 
 newModelFromDefinition : TownHallDefinition -> Model
@@ -49,7 +44,6 @@ newModelFromDefinition definition =
   , design = emptyDesign definition
   , importState = initialImportState
   , toolbarState = initialToolbar True
-  , testMsg = "Not over"
   }
 
 newModelFromImport : TownHallDefinition -> Maybe String -> Design -> ImportState -> Model
@@ -59,7 +53,6 @@ newModelFromImport definition layoutName design importState =
   , design = design
   , importState = importState
   , toolbarState = initialToolbar design.wallDrawing.enabled
-  , testMsg = "Not over"
   }
 
 
@@ -73,7 +66,6 @@ type Msg = ChangeTownHallLevel String
          | ImportLayout ImportMessage
          | LayoutNameChange String
          | ToolbarChange ToolbarMessage
-         | MouseOverTest
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
@@ -129,10 +121,6 @@ update msg model =
         , Cmd.none
         )
 
-    MouseOverTest ->
-      ( { model | testMsg = "Mouse went over" }
-      , Cmd.none
-      )
 
 -- VIEW
 
@@ -143,16 +131,8 @@ view model =
     , viewDesignEditor DesignUpdate model.design
     , viewToolbar ClearLayout ExportLayout ImportLayout ToolbarChange model.toolbarState
     , importDialog model.importState ImportLayout
-    , foo model
     ]
 
-foo : Model -> Html Msg
-foo model =
-  div [ onMouseOverWithButtonState MouseOverTest ] [ text model.testMsg ]
-
-onMouseOverWithButtonState : msg -> Attribute msg
-onMouseOverWithButtonState message =
-  on "mouseOver" (Json.succeed message)
 
 -- SUBSCRIPTIONS
 

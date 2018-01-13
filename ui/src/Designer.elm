@@ -46,6 +46,7 @@ type DesignerMessage = PalletteItemSelected String
                      | RemoveTileHover
                      | WallDrawOn Coordinate
                      | WallDrawOff
+                     | WallDrawContinue Coordinate
 
 
  -- MODEL
@@ -195,6 +196,9 @@ handleDesignerMessage msg design =
     WallDrawOff ->
       cancelWallDrawing design
 
+    WallDrawContinue coordinate ->
+      drawWallIfRequired coordinate design
+
 changePalletteLevel : String -> String -> Design -> Design
 changePalletteLevel id level design =
   String.toInt level
@@ -218,13 +222,9 @@ doUpdateSelectedTile coordinate design =
 hoverOverTile : Coordinate -> Design -> Design
 hoverOverTile coordinate design =     
   let
-    updatedDesign = 
-      drawWallsIfRequired coordinate design
-
-    newGrid = 
-      tileHover coordinate updatedDesign.grid (currentPalletteItem updatedDesign.pallette)
+    newGrid = tileHover coordinate design.grid (currentPalletteItem design.pallette)
   in
-    { updatedDesign | grid = newGrid }
+    { design | grid = newGrid }
 
 setWallDrawing : Bool -> Design -> Design
 setWallDrawing state design =
@@ -289,8 +289,8 @@ cleanUpWallDrawing design =
   in
     { design | wallDrawing = updated }
 
-drawWallsIfRequired : Coordinate -> Design -> Design
-drawWallsIfRequired coordinate design =
+drawWallIfRequired : Coordinate -> Design -> Design
+drawWallIfRequired coordinate design =
   let
     wallDrawing = design.wallDrawing
 
@@ -305,6 +305,7 @@ drawWallsIfRequired coordinate design =
     if drawingWalls && (canDrawWall || canEraseWall)
     then doUpdateSelectedTile coordinate design  
     else design
+
 
 -- VIEW
 
@@ -328,8 +329,10 @@ viewDesignEditor msg design =
     wallDrawOnMsg = WallDrawOn >> msg
 
     wallDrawOffMsg = msg WallDrawOff
+
+    wallDrawContinueMsg = WallDrawContinue >> msg
   in
       
   div [] [ viewPallette itemSelectMsg levelChangeMsg modeChangeMsg design.pallette
-         , viewGrid tileClickMsg tileHoverMsg removeHoverMsg wallDrawOnMsg wallDrawOffMsg design.grid
+         , viewGrid tileClickMsg tileHoverMsg removeHoverMsg wallDrawOnMsg wallDrawOffMsg wallDrawContinueMsg design.grid
          ]

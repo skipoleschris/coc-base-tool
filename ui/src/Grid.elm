@@ -16,7 +16,7 @@ module Grid exposing
 import Dict exposing (Dict)
 import Html exposing (..)
 import Html.Attributes exposing (class, style)
-import Html.Events exposing (onClick, onMouseOver, onMouseOut, onMouseDown, onMouseUp)
+import Html.Events exposing (onClick, onMouseOver, onMouseOut, onMouseDown, onMouseUp, onMouseEnter)
 
 import Common exposing (..)
 import DesignerTypes exposing (..)
@@ -93,8 +93,19 @@ layoutItems grid =
               _      -> 
                 result
           ) []
+        |> List.sortWith sortByPosition
   in
     items      
+
+sortByPosition : LayoutItem -> LayoutItem -> Order
+sortByPosition left right =
+  let
+    rowCompare = compare left.position.row right.position.row
+    columnCompare = compare left.position.column right.position.column
+  in
+    if rowCompare == EQ
+    then columnCompare
+    else rowCompare
 
 isBlankTile : Coordinate -> Grid -> Bool
 isBlankTile coordinate grid =
@@ -312,34 +323,37 @@ viewGrid : (Coordinate -> msg) ->
            msg -> 
            (Coordinate -> msg) -> 
            msg -> 
+           (Coordinate -> msg) ->
            Grid -> 
            Html msg
-viewGrid clickMsg hoverMsg noHoverMsg wallDrawOnMsg wallDrawOffMsg grid =
+viewGrid clickMsg hoverMsg noHoverMsg wallDrawOnMsg wallDrawOffMsg wallDrawContinueMsg grid =
   div [ class "map" 
       , onMouseOut noHoverMsg
       , onMouseUp wallDrawOffMsg
-      ] (List.map (makeRow clickMsg hoverMsg wallDrawOnMsg wallDrawOffMsg grid) (rowIndexes grid))
+      ] (List.map (makeRow clickMsg hoverMsg wallDrawOnMsg wallDrawOffMsg wallDrawContinueMsg grid) (rowIndexes grid))
 
 makeRow : (Coordinate -> msg) -> 
           (Coordinate -> msg) -> 
           (Coordinate -> msg) ->
           msg ->
+          (Coordinate -> msg) ->
           Grid -> 
           Row -> 
           Html msg
-makeRow clickMsg hoverMsg wallDrawOnMsg wallDrawOffMsg grid row =
+makeRow clickMsg hoverMsg wallDrawOnMsg wallDrawOffMsg wallDrawContinueMsg grid row =
   div [ class "row" ] 
-      (List.map (makeCol clickMsg hoverMsg wallDrawOnMsg wallDrawOffMsg grid row) (colIndexes grid))
+      (List.map (makeCol clickMsg hoverMsg wallDrawOnMsg wallDrawOffMsg wallDrawContinueMsg grid row) (colIndexes grid))
 
 makeCol : (Coordinate -> msg) -> 
           (Coordinate -> msg) -> 
           (Coordinate -> msg) ->
           msg ->
+          (Coordinate -> msg) ->
           Grid -> 
           Row -> 
           Column -> 
           Html msg
-makeCol clickMsg hoverMsg wallDrawOnMsg wallDrawOffMsg grid row col =
+makeCol clickMsg hoverMsg wallDrawOnMsg wallDrawOffMsg wallDrawContinueMsg grid row col =
   let
     tile = Dict.get (row, col) grid.tiles
 
@@ -375,6 +389,7 @@ makeCol clickMsg hoverMsg wallDrawOnMsg wallDrawOffMsg grid row col =
         , onMouseOver (hoverMsg (row, col))
         , onMouseDown (wallDrawOnMsg (row, col))
         , onMouseUp wallDrawOffMsg
+        , onMouseEnter (wallDrawContinueMsg (row, col))
         ] []
 
 
