@@ -4,7 +4,8 @@ import Prelude
 
 import Data.List (List(..))
 import Data.Maybe (Maybe, fromMaybe)
-import Data.Argonaut (class DecodeJson, decodeJson, (.?), (.??))
+import Data.Argonaut (class DecodeJson, Json, decodeJson, (.?), (.??))
+import Data.Either (Either)
 
 import Model.CoreTypes (Level(..), Size)
 
@@ -130,5 +131,6 @@ instance decodeJsonWalls :: DecodeJson Walls where
     level <- obj .? "level"
     pure $ Walls { quantity: quantity, maxLevel: Level level }
 
-
+decodeTownHallDefinition :: Json -> Either String TownHallDefinition
+decodeTownHallDefinition = decodeJson
 

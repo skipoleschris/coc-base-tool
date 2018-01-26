@@ -2,8 +2,10 @@ module Test.Main where
 
 import Prelude
 import Control.Monad.Eff (Eff)
-import Control.Monad.Eff.Console (CONSOLE, log)
+import Test.Spec.Runner (RunnerEffects)
 
-main :: forall e. Eff (console :: CONSOLE | e) Unit
+import Model.TownHallDefinitionsSpec (townHallDefinitionsSpec)
+
+main :: Eff (RunnerEffects ()) Unit
 main = do
-  log "You should add some tests."
+  townHallDefinitionsSpec
