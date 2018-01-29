@@ -2,6 +2,7 @@ module LayoutEditor.Editor where
 
 import Prelude
 
+import Control.Monad.Aff (Aff)
 import Data.Either.Nested (Either2)
 import Data.Functor.Coproduct.Nested (Coproduct2)
 import Data.Maybe (Maybe(Nothing))
@@ -10,6 +11,7 @@ import Halogen as H
 import Halogen.Component.ChildPath as CP
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
+import Network.HTTP.Affjax as AX
 
 import Model.CoreTypes (Level)
 import LayoutEditor.Overview as Overview
@@ -28,7 +30,7 @@ type ChildQuery = Coproduct2 Overview.Query Toolbar.Query
 
 type ChildSlot = Either2 Unit Unit
 
-component :: forall m. Applicative m => H.Component HH.HTML Query Unit Void m
+component :: forall eff. H.Component HH.HTML Query Unit Void (Aff (ajax :: AX.AJAX | eff))
 component =
   H.parentComponent
     { initialState: const initialState
@@ -45,14 +47,14 @@ component =
     , wallDrawingMode: true
     }
 
-  render :: State -> H.ParentHTML Query ChildQuery ChildSlot m
+  render :: State -> H.ParentHTML Query ChildQuery ChildSlot (Aff (ajax :: AX.AJAX | eff))
   render state = 
     HH.div [] 
            [ HH.slot' CP.cp1 unit Overview.component unit (HE.input OverviewUpdated)
            , HH.slot' CP.cp2 unit Toolbar.component unit (HE.input ToolbarAction)
            ]
 
-  eval :: Query ~> H.ParentDSL State Query ChildQuery ChildSlot Void m
+  eval :: Query ~> H.ParentDSL State Query ChildQuery ChildSlot Void (Aff (ajax :: AX.AJAX | eff))
   eval = case _ of
     OverviewUpdated (Overview.LayoutInformation level name) next -> do
       H.modify (applyLayoutUpdated level name)

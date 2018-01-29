@@ -1,6 +1,8 @@
 module LayoutEditor.Overview where
 
 import Prelude
+
+import Control.Monad.Aff (Aff)
 import Data.Int (fromString)
 import Data.List (List(..), (:), toUnfoldable)
 import Data.Maybe (Maybe(..), fromMaybe)
@@ -10,6 +12,7 @@ import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Halogen.Query as HQ
+import Network.HTTP.Affjax as AX
 
 import Model.CoreTypes (Level(..))
 
@@ -17,6 +20,7 @@ type State =
   { townHallLevels :: List Level 
   , townHallLevel :: Maybe Level
   , layoutName :: Maybe String
+  , result :: Maybe String
   }
 
 data Query a = LevelChange Level a
@@ -26,7 +30,7 @@ type Input = Unit
 
 data Message = LayoutInformation (Maybe Level) (Maybe String)
 
-component :: forall m. H.Component HH.HTML Query Input Message m
+component :: forall eff. H.Component HH.HTML Query Input Message (Aff (ajax :: AX.AJAX | eff))
 component =
   H.component
     { initialState: const initialState
@@ -41,6 +45,7 @@ component =
     { townHallLevels: Level 11 : Level 10 : Level 9 : Level 8 : Level 7 : Level 6 : Level 5 : Level 4 : Level 3 : Nil
     , townHallLevel: Nothing
     , layoutName: Nothing 
+    , result: Nothing
     }
 
   render :: State -> H.ComponentHTML Query
@@ -48,6 +53,7 @@ component =
     HH.div [] 
            [ renderLevelSelect state
            , renderNameEntry state
+           , HH.text (fromMaybe "[Not Loaded]" state.result)
            ]
 
   renderLevelSelect :: State -> H.ComponentHTML Query
@@ -80,11 +86,12 @@ component =
                       ]
            ]
 
-  eval :: Query ~> H.ComponentDSL State Query Message m
+  eval :: Query ~> H.ComponentDSL State Query Message (Aff (ajax :: AX.AJAX | eff))
   eval = case _ of
     LevelChange level next -> do
       state <- H.get
-      let nextState = state { townHallLevel = Just level }
+      response <- H.liftAff $ AX.get "/data/town-hall-definitions/town-hall-11.json"
+      let nextState = state { townHallLevel = Just level, result = Just response.response }
       H.put nextState
       H.raise $ LayoutInformation nextState.townHallLevel nextState.layoutName
       pure next
