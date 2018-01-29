@@ -3,12 +3,12 @@ module Model.TownHallDefinitionsSpec where
 import Prelude
 
 import Control.Monad.Eff (Eff)
-import Test.Spec (pending, describe, it)
+import Test.Spec (describe, it)
 import Test.Spec.Assertions (shouldEqual)
 import Test.Spec.Reporter.Console (consoleReporter)
 import Test.Spec.Runner (RunnerEffects, run)
 
-import Data.Either (Either(..), isRight, fromRight)
+import Data.Either (isRight, fromRight)
 import Partial.Unsafe (unsafePartial)
 import Data.Argonaut.Parser (jsonParser)
 

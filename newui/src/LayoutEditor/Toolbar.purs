@@ -1,15 +1,12 @@
 module LayoutEditor.Toolbar where
 
 import Prelude
-import Data.Int (fromString)
-import Data.List (List(..), (:), toUnfoldable)
-import Data.Maybe (Maybe(..), fromMaybe)
+import Data.Maybe (Maybe(Nothing))
 
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
-import Halogen.Query as HQ
 
 type State =
   { wallDrawingMode :: Boolean 
