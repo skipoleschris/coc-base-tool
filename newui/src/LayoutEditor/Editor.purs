@@ -3,6 +3,7 @@ module LayoutEditor.Editor where
 import Prelude
 
 import Control.Monad.Aff (Aff)
+import Data.Either (Either, hush)
 import Data.Either.Nested (Either2)
 import Data.Functor.Coproduct.Nested (Coproduct2)
 import Data.Maybe (Maybe(Nothing))
@@ -13,7 +14,7 @@ import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Network.HTTP.Affjax as AX
 
-import Model.CoreTypes (Level)
+import Model.TownHallDefinitions (TownHallDefinition)
 import LayoutEditor.Overview as Overview
 import LayoutEditor.Toolbar as Toolbar
 
@@ -21,7 +22,7 @@ data Query a = OverviewUpdated Overview.Message a
              | ToolbarAction Toolbar.Message a
 
 type State =
-  { townHallLevel :: Maybe Level
+  { townHallDefinition :: Maybe TownHallDefinition
   , layoutName :: Maybe String
   , wallDrawingMode :: Boolean 
   }
@@ -42,7 +43,7 @@ component =
 
   initialState :: State
   initialState =
-    { townHallLevel: Nothing
+    { townHallDefinition: Nothing
     , layoutName: Nothing
     , wallDrawingMode: true
     }
@@ -56,14 +57,22 @@ component =
 
   eval :: Query ~> H.ParentDSL State Query ChildQuery ChildSlot Void (Aff (ajax :: AX.AJAX | eff))
   eval = case _ of
-    OverviewUpdated (Overview.LayoutInformation level name) next -> do
-      H.modify (applyLayoutUpdated level name)
+    OverviewUpdated (Overview.DefinitionChange definition) next -> do
+      H.modify (applyDefinitionUpdated definition)
+      pure next
+
+    OverviewUpdated (Overview.LayoutNameChange name) next -> do
+      H.modify (applyLayoutNameUpdated name)
       pure next
 
     ToolbarAction _ next -> do
       -- TODO
       pure next
 
-  applyLayoutUpdated :: Maybe Level -> Maybe String -> State -> State
-  applyLayoutUpdated level name state =
-    state { townHallLevel = level, layoutName = name }
+  applyDefinitionUpdated :: Either String TownHallDefinition -> State -> State
+  applyDefinitionUpdated definition state =
+    state { townHallDefinition = hush definition }
+
+  applyLayoutNameUpdated :: Maybe String -> State -> State
+  applyLayoutNameUpdated name state =
+    state { layoutName = name }

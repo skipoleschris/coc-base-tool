@@ -6,6 +6,8 @@ import Control.Monad.Aff (Aff)
 import Data.Int (fromString)
 import Data.List (List(..), (:), toUnfoldable)
 import Data.Maybe (Maybe(..), fromMaybe)
+import Data.Either (Either)
+import Data.Argonaut.Parser (jsonParser)
 
 import Halogen as H
 import Halogen.HTML as HH
@@ -15,12 +17,12 @@ import Halogen.Query as HQ
 import Network.HTTP.Affjax as AX
 
 import Model.CoreTypes (Level(..))
+import Model.TownHallDefinitions (TownHallDefinition, decodeTownHallDefinition)
 
 type State =
   { townHallLevels :: List Level 
   , townHallLevel :: Maybe Level
   , layoutName :: Maybe String
-  , result :: Maybe String
   }
 
 data Query a = LevelChange Level a
@@ -28,7 +30,8 @@ data Query a = LevelChange Level a
 
 type Input = Unit
 
-data Message = LayoutInformation (Maybe Level) (Maybe String)
+data Message = DefinitionChange (Either String TownHallDefinition)
+             | LayoutNameChange (Maybe String)
 
 component :: forall eff. H.Component HH.HTML Query Input Message (Aff (ajax :: AX.AJAX | eff))
 component =
@@ -45,7 +48,6 @@ component =
     { townHallLevels: Level 11 : Level 10 : Level 9 : Level 8 : Level 7 : Level 6 : Level 5 : Level 4 : Level 3 : Nil
     , townHallLevel: Nothing
     , layoutName: Nothing 
-    , result: Nothing
     }
 
   render :: State -> H.ComponentHTML Query
@@ -53,7 +55,6 @@ component =
     HH.div [] 
            [ renderLevelSelect state
            , renderNameEntry state
-           , HH.text (fromMaybe "[Not Loaded]" state.result)
            ]
 
   renderLevelSelect :: State -> H.ComponentHTML Query
@@ -90,15 +91,17 @@ component =
   eval = case _ of
     LevelChange level next -> do
       state <- H.get
-      response <- H.liftAff $ AX.get "/data/town-hall-definitions/town-hall-11.json"
-      let nextState = state { townHallLevel = Just level, result = Just response.response }
+      let (Level lvl) = fromMaybe (Level 11) state.townHallLevel 
+      response <- H.liftAff $ AX.get ("/data/town-hall-definitions/town-hall-" <> show lvl <> ".json")
+      let definition = jsonParser (response.response) >>= decodeTownHallDefinition
+      let nextState = state { townHallLevel = Just level }
       H.put nextState
-      H.raise $ LayoutInformation nextState.townHallLevel nextState.layoutName
+      H.raise $ DefinitionChange definition
       pure next
 
     NameChange name next -> do
       state <- H.get
-      let nextState = state { layoutName = Just name }
+      let nextState = state { layoutName = if name == "" then Nothing else Just name }
       H.put nextState
-      H.raise $ LayoutInformation nextState.townHallLevel nextState.layoutName
+      H.raise $ LayoutNameChange nextState.layoutName
       pure next

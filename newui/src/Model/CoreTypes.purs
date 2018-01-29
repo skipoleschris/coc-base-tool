@@ -29,3 +29,9 @@ instance decodeJsonSize :: DecodeJson Size where
     height <- obj .? "height"
     pure $ Size { width: width, height: height }
 
+
+-- Define a type representing a single coordinate in a grid
+
+newtype Row = Row Int
+newtype Column = Column Int
+data Coordinate = Coordinate Row Column
