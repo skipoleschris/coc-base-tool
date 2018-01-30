@@ -1,19 +1,20 @@
 module Model.ItemsSelector ( ItemSelector
-                           , Option
+                           , Option(..)
                            , Options(..)
-                           , Consumption
+                           , Consumption(..)
                            , Consumptions(..)
                            , emptySelector 
                            , freshSelector ) where
 
-import Prelude (class Eq, class Show, show, (<>), map)
+import Prelude (class Eq, class Show, show, (<>), map, ($))
 
 import Data.List as List
 import Data.Map as Map
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), fromMaybe)
+import Data.Tuple
 
-import Model.CoreTypes (Level)
-import Model.TownHallDefinitions (TownHallDefinition(..), AllowedBuilding, wallsToAllowedBuilding)
+import Model.CoreTypes (Level(..))
+import Model.TownHallDefinitions (TownHallDefinition(..), AllowedBuilding(..), Mode(..), wallsToAllowedBuilding)
 
 
 -- Types
@@ -91,30 +92,38 @@ freshSelector (TownHallDefinition { level: level
     buildings = defences <> army <> resources <> traps
     wallsAsBuildings = map wallsToAllowedBuilding walls
     all = buildings <> wallsAsBuildings
---    options = Map.fromFoldable $ List.map (\i -> (i.id, itemToOption i)) all
+    options = Map.fromFoldable $ (map optionForAllowedBuilding all)
   in
     { items: all
     , selected: Nothing
-    , options: Options Map.empty
+    , options: Options options
     , consumptions: Consumptions Map.empty
     }
 
--- itemToOption : PalletteItem -> PalletteOption
--- itemToOption item = 
---   let
---     availableLevels = 
---       levelsList item.maxLevel item.minLevel
---   in
---     { availableLevels = availableLevels
---     , disabledModes = []
---     , lockedModes = []
---     , level = List.head availableLevels |> Maybe.withDefault 1
---     , mode = List.head item.modes |> Maybe.map (\m -> m.id)
---     }
+optionForAllowedBuilding :: AllowedBuilding -> Tuple String Option
+optionForAllowedBuilding (AllowedBuilding { id: id
+                                          , maxLevel: maxLevel
+                                          , minLevel: minLevel
+                                          , modes: modes
+                                          }) = 
+  let
+    availableLevels = 
+      levelsList maxLevel minLevel
 
--- levelsList : Level -> Maybe Level -> List Level   
--- levelsList max maybeMin =
---   let
---      min = Maybe.withDefault 1 maybeMin
---    in
---      List.range min max |> List.reverse 
+    option = Option { availableLevels: availableLevels
+                    , disabledModes: List.Nil
+                    , lockedModes: List.Nil
+                    , level: fromMaybe (Level 1) $ List.head availableLevels
+                    , mode: map (\(Mode { id: id' }) -> id') $ List.head modes
+                    }
+  in
+    Tuple id option
+
+levelsList :: Level -> Maybe Level -> List.List Level   
+levelsList max maybeMin =
+  let
+     (Level min) = fromMaybe (Level 1) maybeMin
+
+     (Level maxVal) = max
+   in
+     List.reverse $ map Level $ List.range min maxVal
