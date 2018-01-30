@@ -2,10 +2,11 @@ module Test.Main where
 
 import Prelude
 import Control.Monad.Eff (Eff)
-import Test.Spec.Runner (RunnerEffects)
+import Node.FS (FS)
+import Test.Spec.Discovery (discover)
+import Test.Spec.Reporter.Console (consoleReporter)
+import Test.Spec.Runner (RunnerEffects, run)
 
-import Model.TownHallDefinitionsSpec (townHallDefinitionsSpec)
+main :: Eff (RunnerEffects (fs :: FS)) Unit
+main = discover ".*\\..*Spec" >>= run [consoleReporter]
 
-main :: Eff (RunnerEffects ()) Unit
-main = do
-  townHallDefinitionsSpec

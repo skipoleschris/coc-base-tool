@@ -2,11 +2,8 @@ module Model.TownHallDefinitionsSpec where
 
 import Prelude
 
-import Control.Monad.Eff (Eff)
-import Test.Spec (describe, it)
+import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
-import Test.Spec.Reporter.Console (consoleReporter)
-import Test.Spec.Runner (RunnerEffects, run)
 
 import Data.Either (isRight, fromRight)
 import Partial.Unsafe (unsafePartial)
@@ -15,12 +12,12 @@ import Data.Argonaut.Parser (jsonParser)
 import Model.CoreTypes (Level(..))
 import Model.TownHallDefinitions (TownHallDefinition(..), decodeTownHallDefinition)
 
-townHallDefinitionsSpec :: Eff (RunnerEffects ()) Unit
-townHallDefinitionsSpec = run [consoleReporter] do
+spec :: forall r. Spec r Unit
+spec = 
   describe "Town Hall Definitions" do
     describe "Json Parsing" do
       it "parses a valid town hall definition file" do
-        let parseResult = jsonParser th11Definition >>= decodeTownHallDefinition
+        let parseResult = jsonParser th11DefinitionContent >>= decodeTownHallDefinition
         (isRight parseResult) `shouldEqual` true
         let definition = unsafePartial $ fromRight parseResult
         (levelFrom definition) `shouldEqual` (Level 11)
@@ -29,8 +26,15 @@ townHallDefinitionsSpec = run [consoleReporter] do
 levelFrom :: TownHallDefinition -> Level
 levelFrom (TownHallDefinition d) = d.level
 
-th11Definition :: String
-th11Definition = """
+th11Definition :: TownHallDefinition
+th11Definition =
+  let 
+    parseResult = jsonParser th11DefinitionContent >>= decodeTownHallDefinition
+  in
+    unsafePartial $ fromRight parseResult
+
+th11DefinitionContent :: String
+th11DefinitionContent = """
 {
   "level": 11,
   "defences": [

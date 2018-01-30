@@ -3,13 +3,13 @@ module Model.TownHallDefinitions where
 import Prelude
 
 import Data.List (List(..))
-import Data.Maybe (Maybe, fromMaybe)
+import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Argonaut (class DecodeJson, Json, decodeJson, (.?), (.??))
 import Data.Either (Either)
 
-import Model.CoreTypes (Level(..), Size)
+import Model.CoreTypes (Level(..), Size(..))
 
-newtype TownHallDefinition = TownHallDefinition
+data TownHallDefinition = TownHallDefinition
   { level :: Level
   , defences :: List AllowedBuilding
   , army :: List AllowedBuilding
@@ -20,7 +20,7 @@ newtype TownHallDefinition = TownHallDefinition
   , walls :: List Walls
   }
 
-newtype AllowedBuilding = AllowedBuilding
+data AllowedBuilding = AllowedBuilding
   { id :: String
   , name :: String
   , quantity :: Int
@@ -30,29 +30,38 @@ newtype AllowedBuilding = AllowedBuilding
   , modes :: List Mode
   }
 
-newtype Mode = Mode
+data Mode = Mode
   { id :: String
   , name :: String
   , maxAllowed :: Maybe Int 
   , minLevel :: Maybe Level
   }
 
-newtype Troop = Troop
+data Troop = Troop
   { id :: String
   , name :: String
   , maxLevel :: Level 
   }
 
-newtype Spell = Spell
+data Spell = Spell
   { id :: String
   , name :: String
   , maxLevel :: Level 
   }
 
-newtype Walls = Walls
+data Walls = Walls
   { quantity :: Int
   , maxLevel :: Level
   }
+
+
+-- Typesclasses
+
+instance showAllowedBuilding :: Show AllowedBuilding where
+  show (AllowedBuilding b) = show b.name
+
+instance eqAllowedBuilding :: Eq AllowedBuilding where
+  eq (AllowedBuilding l) (AllowedBuilding r) = l.id == r.id
 
 
 -- Json Decoders
@@ -131,6 +140,24 @@ instance decodeJsonWalls :: DecodeJson Walls where
     level <- obj .? "level"
     pure $ Walls { quantity: quantity, maxLevel: Level level }
 
+
+-- Functions
+
 decodeTownHallDefinition :: Json -> Either String TownHallDefinition
 decodeTownHallDefinition = decodeJson
 
+wallsToAllowedBuilding :: Walls -> AllowedBuilding
+wallsToAllowedBuilding (Walls { quantity: quantity, maxLevel: maxLevel }) =
+  let
+    id = "wall" <> (show maxLevel)
+    name = "Wall (max level " <> show maxLevel <> ")"
+  in    
+    AllowedBuilding 
+      { id: id
+      , name: name
+      , quantity: quantity
+      , maxLevel: maxLevel
+      , minLevel: Nothing
+      , size: Size { width: 1, height: 1 }
+      , modes: Nil
+      }
