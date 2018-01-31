@@ -1,8 +1,8 @@
 module Model.CoreTypes where
 
-import Prelude
+import Prelude (class Eq, class Show, bind, pure, show, ($), (==))
 
-import Data.Maybe
+import Data.Maybe (Maybe)
 
 import Data.Argonaut (class DecodeJson, decodeJson, (.?))
 

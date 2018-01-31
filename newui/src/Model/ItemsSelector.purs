@@ -6,8 +6,9 @@ module Model.ItemsSelector ( ItemSelector
                            , emptySelector 
                            , freshSelector ) where
 
-import Prelude (class Eq, class Show, show, (<>), map, ($))
+import Prelude (class Eq, class Show, show, map, (<>), (+), ($))
 
+import Data.Foldable (foldl)
 import Data.List as List
 import Data.Map as Map
 import Data.Maybe (Maybe(..), fromMaybe)
@@ -135,8 +136,7 @@ consumeItems :: List.List PlacedItem -> ItemSelector -> ItemSelector
 consumeItems placed selector = 
   let
     consumptions = 
-      selector.consumptions
-      --placedItemsToConsumptions placed
+      placedItemsToConsumptions placed
 
     options =
       selector.options
@@ -163,4 +163,43 @@ consumeItems placed selector =
     , consumptions: consumptions
     }
 
+placedItemsToConsumptions :: List.List PlacedItem -> Consumptions
+placedItemsToConsumptions items =
+  Consumptions $ foldl updateConsumption Map.empty items
 
+updateConsumption :: Map.Map String Consumption -> PlacedItem -> Map.Map String Consumption
+updateConsumption result item =
+    Map.alter (updateConsumptionWithItem item) item.id result 
+
+updateConsumptionWithItem :: PlacedItem -> Maybe Consumption -> Maybe Consumption
+updateConsumptionWithItem item consumption =
+  case consumption of
+    Nothing ->
+      Just (newConsumption item)
+    Just c ->
+      Just (applyAdditionalConsumption item c)
+
+newConsumption :: PlacedItem -> Consumption
+newConsumption item =
+  let
+    modesUsed = fromMaybe Map.empty $ map (\mode -> Map.singleton mode 1) item.mode 
+  in
+    Consumption { numberPlaced: 1
+                , modesUsed: modesUsed
+                }
+
+applyAdditionalConsumption :: PlacedItem -> Consumption -> Consumption
+applyAdditionalConsumption item (Consumption { numberPlaced: numberPlaced
+                                             , modesUsed: modesUsed}) =
+  let
+    newModesUsed = updateModesUsed item.mode modesUsed
+  in
+    Consumption { numberPlaced: numberPlaced + 1
+                , modesUsed: newModesUsed
+                }
+
+updateModesUsed :: Maybe String -> Map.Map String Int -> Map.Map String Int
+updateModesUsed mode used =
+  fromMaybe used $ map (\m -> Map.alter incrementCount m used) mode
+  where
+    incrementCount count = Just $ fromMaybe 1 $ map (\i -> i + 1) $ count
