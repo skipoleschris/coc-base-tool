@@ -13,7 +13,7 @@ import Data.Map as Map
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Tuple
 
-import Model.CoreTypes (Level(..))
+import Model.CoreTypes (Level(..), PlacedItem)
 import Model.TownHallDefinitions (TownHallDefinition(..), AllowedBuilding(..), Mode(..), wallsToAllowedBuilding)
 
 
@@ -127,3 +127,40 @@ levelsList max maybeMin =
      (Level maxVal) = max
    in
      List.reverse $ map Level $ List.range min maxVal
+
+
+-- Update selector to consume items
+
+consumeItems :: List.List PlacedItem -> ItemSelector -> ItemSelector
+consumeItems placed selector = 
+  let
+    consumptions = 
+      selector.consumptions
+      --placedItemsToConsumptions placed
+
+    options =
+      selector.options
+      --updateOptionsFromConsumptions pallette.items consumptions pallette.options
+
+    selected =
+      selector.selected
+      -- case pallette.selected of
+      --   Nothing -> 
+      --     Nothing
+      --   Just id ->
+      --     pallette.items          
+      --       |> List.filter (\i -> i.id == id)
+      --       |> List.head
+      --       |> Maybe.andThen (\i -> 
+      --           if isNotConsumed consumptions i
+      --           then Just id
+      --           else Nothing
+      --         )
+  in   
+    { items: selector.items
+    , selected: selected
+    , options: options
+    , consumptions: consumptions
+    }
+
+

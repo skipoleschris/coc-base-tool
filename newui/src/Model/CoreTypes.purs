@@ -2,6 +2,8 @@ module Model.CoreTypes where
 
 import Prelude
 
+import Data.Maybe
+
 import Data.Argonaut (class DecodeJson, decodeJson, (.?))
 
 -- Define the Level type for different building and troop levels
@@ -35,3 +37,13 @@ instance decodeJsonSize :: DecodeJson Size where
 newtype Row = Row Int
 newtype Column = Column Int
 data Coordinate = Coordinate Row Column
+
+
+-- A type representing an item that has been placed on the layout
+
+type PlacedItem =
+  { id :: String
+  , level :: Level
+  , mode :: Maybe String
+  , size :: Size
+  }
