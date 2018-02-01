@@ -6,12 +6,13 @@ import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual, fail)
 
 import Data.List as List
+import Data.List ((:))
 import Data.Map as Map
 import Data.Maybe (Maybe(..))
 
-import Model.CoreTypes (Level(..))
+import Model.CoreTypes (Level(..), Size(..))
 import Model.TownHallDefinitions (AllowedBuilding(..))
-import Model.ItemsSelector (Consumptions(..), Options(..), Option(..), emptySelector, freshSelector)
+import Model.ItemsSelector
 import Model.TownHallDefinitionsSpec (th11Definition)
 
 spec :: forall r. Spec r Unit
@@ -50,7 +51,74 @@ spec =
             availableLevels `shouldEqual` levelsTo15
             level `shouldEqual` (Level 15)
           Nothing ->
-            fail "An option should be returned"        
+            fail "An option should be returned"     
+
+      it "should consume the given items" do
+        let selector = freshSelector th11Definition
+        let placedItems = { id: "eagle-artillery", level: Level 2, mode: Nothing, size: sizeOf 4 } :
+                          { id: "cannon", level: Level 15, mode: Just "burst", size: sizeOf 3 } :
+                          { id: "cannon", level: Level 14, mode: Just "normal", size: sizeOf 3 } :
+                          { id: "cannon", level: Level 14, mode: Just "normal", size: sizeOf 3 } :
+                          List.Nil
+        let result = consumeItems placedItems selector
+        let (Consumptions consumptions) = result.consumptions
+
+        case (Map.lookup "eagle-artillery" consumptions) of
+          Just (Consumption { numberPlaced: numberPlaced
+                            , modesUsed: modesUsed }) -> do
+            numberPlaced `shouldEqual` 1
+            (Map.isEmpty modesUsed) `shouldEqual` true
+          Nothing ->
+            fail "A consumption should be returned"
+
+        case (Map.lookup "cannon" consumptions) of
+          Just (Consumption { numberPlaced: numberPlaced
+                            , modesUsed: modesUsed }) -> do
+            numberPlaced `shouldEqual` 3
+            (Map.lookup "normal" modesUsed) `shouldEqual` Just 2
+            (Map.lookup "burst" modesUsed) `shouldEqual` Just 1
+          Nothing ->
+            fail "A consumption should be returned"
+
+      it "should retain the selected item if not all have been consumed" do
+        let selector = selectItem "cannon" $ freshSelector th11Definition
+        let placedItems = { id: "eagle-artillery", level: Level 2, mode: Nothing, size: sizeOf 4 } :
+                          { id: "cannon", level: Level 15, mode: Just "burst", size: sizeOf 3 } :
+                          { id: "cannon", level: Level 14, mode: Just "normal", size: sizeOf 3 } :
+                          { id: "cannon", level: Level 14, mode: Just "normal", size: sizeOf 3 } :
+                          List.Nil
+        let result = consumeItems placedItems selector
+        result.selected `shouldEqual` (Just "cannon")
+
+      it "should deselect the selected item if all have been consumed" do
+        let selector = selectItem "eagle-artillery" $ freshSelector th11Definition
+        let placedItems = { id: "eagle-artillery", level: Level 2, mode: Nothing, size: sizeOf 4 } :
+                          { id: "cannon", level: Level 15, mode: Just "burst", size: sizeOf 3 } :
+                          { id: "cannon", level: Level 14, mode: Just "normal", size: sizeOf 3 } :
+                          { id: "cannon", level: Level 14, mode: Just "normal", size: sizeOf 3 } :
+                          List.Nil
+        let result = consumeItems placedItems selector
+        result.selected `shouldEqual` Nothing
+
+      it "should disable modes where all allowed have been placed" do
+        let selector = selectItem "cannon" $ freshSelector th11Definition
+        let placedItems = { id: "cannon", level: Level 15, mode: Just "burst", size: sizeOf 3 } :
+                          List.Nil
+        let result = consumeItems placedItems selector
+        let (Options options) = result.options
+
+        case (Map.lookup "cannon" options) of
+          Just (Option { disabledModes: disabledModes
+                       , mode: mode }) -> do
+            disabledModes `shouldEqual` ("burst" : List.Nil)
+            mode `shouldEqual` Just "normal"
+          Nothing ->
+            fail "An option should be returned"
+
+
 
 levelsTo15 :: List.List Level
 levelsTo15 =  List.reverse $ map Level $ List.range 1 15
+
+sizeOf :: Int -> Size
+sizeOf s = Size { width: s, height: s } 

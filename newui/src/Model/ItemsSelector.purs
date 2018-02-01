@@ -4,15 +4,18 @@ module Model.ItemsSelector ( ItemSelector
                            , Consumption(..)
                            , Consumptions(..)
                            , emptySelector 
-                           , freshSelector ) where
+                           , freshSelector
+                           , consumeItems
+                           , selectItem ) where
 
-import Prelude (class Eq, class Show, show, map, (<>), (+), ($))
+import Prelude (class Eq, class Show, show, map, (<>), (+), ($), (<<<), (>>=), (==), (<), (>=))
 
 import Data.Foldable (foldl)
 import Data.List as List
 import Data.Map as Map
-import Data.Maybe (Maybe(..), fromMaybe)
+import Data.Maybe (Maybe(..), fromMaybe, fromJust)
 import Data.Tuple
+import Partial.Unsafe (unsafePartial)
 
 import Model.CoreTypes (Level(..), PlacedItem)
 import Model.TownHallDefinitions (TownHallDefinition(..), AllowedBuilding(..), Mode(..), wallsToAllowedBuilding)
@@ -139,29 +142,18 @@ consumeItems placed selector =
       placedItemsToConsumptions placed
 
     options =
-      selector.options
-      --updateOptionsFromConsumptions pallette.items consumptions pallette.options
+      updateOptionsFromConsumptions consumptions selector.options selector.items 
 
     selected =
-      selector.selected
-      -- case pallette.selected of
-      --   Nothing -> 
-      --     Nothing
-      --   Just id ->
-      --     pallette.items          
-      --       |> List.filter (\i -> i.id == id)
-      --       |> List.head
-      --       |> Maybe.andThen (\i -> 
-      --           if isNotConsumed consumptions i
-      --           then Just id
-      --           else Nothing
-      --         )
+      selector.selected >>= (stillSelected selector.items consumptions)
   in   
     { items: selector.items
     , selected: selected
     , options: options
     , consumptions: consumptions
     }
+
+-- Consumption handling
 
 placedItemsToConsumptions :: List.List PlacedItem -> Consumptions
 placedItemsToConsumptions items =
@@ -182,24 +174,111 @@ updateConsumptionWithItem item consumption =
 newConsumption :: PlacedItem -> Consumption
 newConsumption item =
   let
-    modesUsed = fromMaybe Map.empty $ map (\mode -> Map.singleton mode 1) item.mode 
+    modesUsed = (fromMaybe Map.empty <<< map singleConsumption) $ item.mode 
   in
     Consumption { numberPlaced: 1
                 , modesUsed: modesUsed
                 }
+  where
+    singleConsumption mode = Map.singleton mode 1
 
 applyAdditionalConsumption :: PlacedItem -> Consumption -> Consumption
 applyAdditionalConsumption item (Consumption { numberPlaced: numberPlaced
                                              , modesUsed: modesUsed}) =
   let
-    newModesUsed = updateModesUsed item.mode modesUsed
+    newModesUsed = updateModesUsed modesUsed item.mode
   in
     Consumption { numberPlaced: numberPlaced + 1
                 , modesUsed: newModesUsed
                 }
 
-updateModesUsed :: Maybe String -> Map.Map String Int -> Map.Map String Int
-updateModesUsed mode used =
-  fromMaybe used $ map (\m -> Map.alter incrementCount m used) mode
+updateModesUsed :: Map.Map String Int -> Maybe String -> Map.Map String Int
+updateModesUsed used =
+  fromMaybe used <<< map updateMode
   where
-    incrementCount count = Just $ fromMaybe 1 $ map (\i -> i + 1) $ count
+    updateMode m = Map.alter incrementCount m used
+    incrementCount = Just <<< fromMaybe 1 <<< map (\i -> i + 1)
+
+-- Option handling
+
+updateOptionsFromConsumptions :: Consumptions -> Options -> List.List AllowedBuilding -> Options
+updateOptionsFromConsumptions (Consumptions consumptions) (Options options) =
+  Options <<< Map.fromFoldable <<< map (updateOptionsForItem consumptions options)
+
+updateOptionsForItem :: Map.Map String Consumption -> Map.Map String Option -> AllowedBuilding -> Tuple String Option
+updateOptionsForItem consumptions options (AllowedBuilding { id: id
+                                                           , modes: modes }) =
+  let
+    option = unsafePartial $ fromJust $ Map.lookup id $ options
+
+    consumption = Map.lookup id consumptions
+  in
+    (Tuple id <<< fromMaybe option <<< map (applyOptionUpdate modes option)) $ consumption 
+
+applyOptionUpdate :: List.List Mode -> Option -> Consumption -> Option
+applyOptionUpdate modes 
+                  (Option { availableLevels: availableLevels
+                          , lockedModes: lockedModes
+                          , level: level
+                          , mode: mode })
+                  (Consumption { modesUsed: modesUsed }) = 
+  let
+    consumedModes =
+      (map modeId <<< List.filter (isModeConsumed modesUsed)) $ modes 
+      
+    invalidMode = 
+      (fromMaybe false <<< map (consumedBy consumedModes)) $ mode
+
+    defaultMode =
+      (map modeId <<< List.head) $ modes
+  in
+    Option { availableLevels: availableLevels
+           , disabledModes: consumedModes 
+           , lockedModes: lockedModes
+           , level: level 
+           , mode: if invalidMode then defaultMode else mode 
+           }
+  where
+    modeId (Mode { id: id' }) = id'
+    consumedBy cm m = List.elem m cm
+
+isModeConsumed :: Map.Map String Int -> Mode -> Boolean  
+isModeConsumed modesUsed (Mode { id: id
+                               , maxAllowed: maxAllowed }) =
+  let
+    numberPlaced =
+      (fromMaybe 0 <<< Map.lookup id) $ modesUsed
+  in
+    (fromMaybe false <<< map (allUsed numberPlaced)) $ maxAllowed
+  where
+    allUsed n max = n >= max
+
+
+-- Selected item handling
+
+stillSelected :: List.List AllowedBuilding -> Consumptions -> String -> Maybe String
+stillSelected buildings (Consumptions consumptions) id =
+  let
+    consumedCount = 
+      numberConsumed (Map.lookup id consumptions)
+
+    allowedCount = 
+      numberAllowed ((List.head <<< List.filter (isBuilding id)) $ buildings)
+  in 
+    if consumedCount < allowedCount then Just id else Nothing
+  where
+    numberConsumed (Just (Consumption { numberPlaced: numberPlaced })) = numberPlaced 
+    numberConsumed Nothing = 0
+
+    isBuilding bId (AllowedBuilding { id: id' }) = bId == id'
+
+    numberAllowed (Just (AllowedBuilding { quantity: quantity})) = quantity
+    numberAllowed Nothing = 0
+
+
+
+-- Updates to the model based on selection or changes or values
+
+selectItem :: String -> ItemSelector -> ItemSelector
+selectItem id selector =
+  selector { selected = Just id }
