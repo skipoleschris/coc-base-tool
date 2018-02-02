@@ -2,6 +2,7 @@ module Model.CoreTypes where
 
 import Prelude (class Eq, class Show, bind, pure, show, ($), (==))
 
+import Data.Ord
 import Data.Maybe (Maybe)
 
 import Data.Argonaut (class DecodeJson, decodeJson, (.?))
@@ -15,6 +16,9 @@ instance showLevel :: Show Level where
 
 instance eqLevel :: Eq Level where
   eq (Level left) (Level right) = left == right
+
+instance ordLevel :: Ord Level where
+  compare (Level l) (Level r) = compare l r
 
 
 -- Define a type representing the size of something

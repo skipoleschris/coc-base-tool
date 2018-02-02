@@ -6,9 +6,11 @@ module Model.ItemsSelector ( ItemSelector
                            , emptySelector 
                            , freshSelector
                            , consumeItems
-                           , selectItem ) where
+                           , selectItem
+                           , changeLevelSelection
+                           , changeModeSelection ) where
 
-import Prelude (class Eq, class Show, show, map, (<>), (+), ($), (<<<), (>>=), (==), (<), (>=))
+import Prelude (class Eq, class Show, show, map, (<>), (+), ($), (<<<), (>>=), (==), (<), (>), (>=))
 
 import Data.Foldable (foldl)
 import Data.List as List
@@ -217,27 +219,21 @@ updateOptionsForItem consumptions options (AllowedBuilding { id: id
 
 applyOptionUpdate :: List.List Mode -> Option -> Consumption -> Option
 applyOptionUpdate modes 
-                  (Option { availableLevels: availableLevels
-                          , lockedModes: lockedModes
-                          , level: level
-                          , mode: mode })
+                  (Option option)
                   (Consumption { modesUsed: modesUsed }) = 
   let
     consumedModes =
       (map modeId <<< List.filter (isModeConsumed modesUsed)) $ modes 
       
     invalidMode = 
-      (fromMaybe false <<< map (consumedBy consumedModes)) $ mode
+      (fromMaybe false <<< map (consumedBy consumedModes)) $ option.mode
 
     defaultMode =
       (map modeId <<< List.head) $ modes
   in
-    Option { availableLevels: availableLevels
-           , disabledModes: consumedModes 
-           , lockedModes: lockedModes
-           , level: level 
-           , mode: if invalidMode then defaultMode else mode 
-           }
+    Option (option { disabledModes = consumedModes 
+                   , mode = if invalidMode then defaultMode else option.mode 
+                   })
   where
     modeId (Mode { id: id' }) = id'
     consumedBy cm m = List.elem m cm
@@ -263,14 +259,12 @@ stillSelected buildings (Consumptions consumptions) id =
       numberConsumed (Map.lookup id consumptions)
 
     allowedCount = 
-      numberAllowed ((List.head <<< List.filter (isBuilding id)) $ buildings)
+      numberAllowed (findBuilding id buildings)
   in 
     if consumedCount < allowedCount then Just id else Nothing
   where
     numberConsumed (Just (Consumption { numberPlaced: numberPlaced })) = numberPlaced 
     numberConsumed Nothing = 0
-
-    isBuilding bId (AllowedBuilding { id: id' }) = bId == id'
 
     numberAllowed (Just (AllowedBuilding { quantity: quantity})) = quantity
     numberAllowed Nothing = 0
@@ -282,3 +276,73 @@ stillSelected buildings (Consumptions consumptions) id =
 selectItem :: String -> ItemSelector -> ItemSelector
 selectItem id selector =
   selector { selected = Just id }
+
+changeLevelSelection :: String -> Level -> ItemSelector -> ItemSelector
+changeLevelSelection id level selector =
+  let
+    modes =
+      (fromMaybe List.Nil <<< map buildingModes <<< findBuilding id) $ selector.items 
+
+    (Options options) =
+      selector.options
+
+    newOptions =
+      Map.update (updateOptionLevel modes level) id options
+  in
+    selector { options = (Options newOptions) }
+  where
+    buildingModes (AllowedBuilding { modes: modes' }) = modes'
+
+updateOptionLevel :: List.List Mode -> Level -> Option -> Maybe Option  
+updateOptionLevel modes newLevel (Option option) =
+  let
+    lockedModes =
+      identifyLockedModes newLevel modes
+
+    newMode = 
+      option.mode >>= (determineMode modes lockedModes)
+  in
+    Just (Option (option { level = newLevel
+                         , mode = newMode
+                         , lockedModes = lockedModes }))
+
+determineMode :: List.List Mode -> List.List String -> String -> Maybe String
+determineMode modes lockedModes mode =
+  if List.elem mode lockedModes
+  then (map modeId <<< List.head) $ modes
+  else Just mode
+  where
+    modeId (Mode { id: id }) = id
+
+identifyLockedModes :: Level -> List.List Mode -> List.List String
+identifyLockedModes level modes = 
+  (map modeId <<< List.filter (levelBelowMin level)) $ modes
+  where
+    levelBelowMin level' (Mode { minLevel: minLevel }) =
+      (fromMaybe false <<< map (\l -> l > level')) $ minLevel
+
+    modeId (Mode { id: id }) = id
+
+changeModeSelection :: String -> String -> ItemSelector -> ItemSelector
+changeModeSelection id mode selector =
+  let
+    (Options options) =
+      selector.options
+
+    newOptions =
+      Map.update (setMode mode) id options
+  in 
+    selector { options = (Options newOptions) }
+  where
+    setMode mode' (Option option) =
+      Just (Option (option { mode = Just mode' }))
+
+
+-- Utility functions
+
+findBuilding :: String -> List.List AllowedBuilding -> Maybe AllowedBuilding
+findBuilding id = 
+  List.head <<< List.filter (isBuilding id)
+  where
+    isBuilding bId (AllowedBuilding { id: id' }) = bId == id'
+

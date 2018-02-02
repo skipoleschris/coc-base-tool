@@ -115,6 +115,55 @@ spec =
           Nothing ->
             fail "An option should be returned"
 
+      it "should allow the selected level of an item to be changed" do
+        let selector = freshSelector th11Definition
+        let (Options options) = selector.options
+        case (Map.lookup "cannon" options) of
+          Just (Option { level: level }) -> do
+            level `shouldEqual` Level 15
+          Nothing ->
+            fail "An option should be returned"
+
+        let selector' = changeLevelSelection "cannon" (Level 12) selector
+        let (Options options') = selector'.options
+        case (Map.lookup "cannon" options') of
+          Just (Option option) -> do
+            option.level `shouldEqual` Level 12
+            option.mode `shouldEqual` Just "normal"
+            option.lockedModes `shouldEqual` List.Nil
+          Nothing ->
+            fail "An option should be returned"
+
+      it "should lock and deselect any no loger accessible nodes when the selected level of an item is changed" do
+        let selector = changeLevelSelection "cannon" (Level 3) $
+                       changeModeSelection "cannon" "burst" $ 
+                       freshSelector th11Definition
+        let (Options options) = selector.options
+        case (Map.lookup "cannon" options) of
+          Just (Option option) -> do
+            option.level `shouldEqual` Level 3
+            option.mode `shouldEqual` Just "normal"
+            option.lockedModes `shouldEqual` ("burst" : List.Nil)
+          Nothing ->
+            fail "An option should be returned"
+
+      it "should allow the selected mode of an item to be changed" do
+        let selector = freshSelector th11Definition
+        let (Options options) = selector.options
+        case (Map.lookup "cannon" options) of
+          Just (Option { mode: mode }) -> do
+            mode `shouldEqual` Just "normal"
+          Nothing ->
+            fail "An option should be returned"
+
+        let selector' = changeModeSelection "cannon" "burst" selector
+        let (Options options') = selector'.options
+        case (Map.lookup "cannon" options') of
+          Just (Option { mode: mode' }) -> do
+            mode' `shouldEqual` Just "burst"
+          Nothing ->
+            fail "An option should be returned"
+
 
 
 levelsTo15 :: List.List Level
