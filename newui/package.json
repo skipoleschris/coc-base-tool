@@ -1,0 +1,8 @@
+{
+  "name": "coc-base-tool",
+  "version": 0.1,
+  "description": "A Clash of Clans base design and analysis tool",
+  "devDependencies": {
+    "cypress": "^1.4.2"
+  }
+}
