@@ -4,8 +4,8 @@ import Prelude
 
 import Control.Monad.Aff (Aff)
 import Data.Either (Either, hush)
-import Data.Either.Nested (Either2)
-import Data.Functor.Coproduct.Nested (Coproduct2)
+import Data.Either.Nested (Either3)
+import Data.Functor.Coproduct.Nested (Coproduct3)
 import Data.Maybe (Maybe(Nothing))
 
 import Halogen as H
@@ -17,9 +17,11 @@ import Network.HTTP.Affjax as AX
 import Model.TownHallDefinitions (TownHallDefinition)
 import LayoutEditor.Overview as Overview
 import LayoutEditor.Toolbar as Toolbar
+import LayoutEditor.Pallette as Pallette
 
 data Query a = OverviewUpdated Overview.Message a
              | ToolbarAction Toolbar.Message a
+             | PalletteSelection Pallette.Message a
 
 type State =
   { townHallDefinition :: Maybe TownHallDefinition
@@ -27,9 +29,9 @@ type State =
   , wallDrawingMode :: Boolean 
   }
 
-type ChildQuery = Coproduct2 Overview.Query Toolbar.Query
+type ChildQuery = Coproduct3 Overview.Query Toolbar.Query Pallette.Query
 
-type ChildSlot = Either2 Unit Unit
+type ChildSlot = Either3 Unit Unit Unit
 
 component :: forall eff. H.Component HH.HTML Query Unit Void (Aff (ajax :: AX.AJAX | eff))
 component =
@@ -53,6 +55,7 @@ component =
     HH.div [] 
            [ HH.slot' CP.cp1 unit Overview.component unit (HE.input OverviewUpdated)
            , HH.slot' CP.cp2 unit Toolbar.component unit (HE.input ToolbarAction)
+           , HH.slot' CP.cp3 unit Pallette.component unit (HE.input PalletteSelection)
            ]
 
   eval :: Query ~> H.ParentDSL State Query ChildQuery ChildSlot Void (Aff (ajax :: AX.AJAX | eff))
@@ -66,6 +69,10 @@ component =
       pure next
 
     ToolbarAction _ next -> do
+      -- TODO
+      pure next
+
+    PalletteSelection _ next -> do
       -- TODO
       pure next
 
