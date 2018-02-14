@@ -28,6 +28,9 @@ newtype Size = Size
   , height :: Int
   }
 
+minimumSize :: Size
+minimumSize = Size { width: 1, height: 1 }
+
 instance decodeJsonSize :: DecodeJson Size where
   decodeJson json = do
     obj <- decodeJson json

@@ -8,18 +8,25 @@ module Model.ItemsSelector ( ItemSelector
                            , consumeItems
                            , selectItem
                            , changeLevelSelection
-                           , changeModeSelection ) where
+                           , changeModeSelection
+                           , selectableBuildings
+                           , numberConsumed
+                           , isSelected
+                           , availableLevels
+                           , getBuildingOption
+                           , currentlySelected) where
 
 import Prelude (class Eq, class Show, show, map, (<>), (+), ($), (<<<), (>>=), (==), (<), (>), (>=))
 
 import Data.Foldable (foldl)
 import Data.List as List
+import Data.List ((:))
 import Data.Map as Map
 import Data.Maybe (Maybe(..), fromMaybe, fromJust)
 import Data.Tuple
 import Partial.Unsafe (unsafePartial)
 
-import Model.CoreTypes (Level(..), PlacedItem)
+import Model.CoreTypes (Level(..), minimumSize, PlacedItem)
 import Model.TownHallDefinitions (TownHallDefinition(..), AllowedBuilding(..), Mode(..), wallsToAllowedBuilding)
 
 
@@ -113,13 +120,13 @@ optionForAllowedBuilding (AllowedBuilding { id: id
                                           , modes: modes
                                           }) = 
   let
-    availableLevels = 
+    levels = 
       levelsList maxLevel minLevel
 
-    option = Option { availableLevels: availableLevels
+    option = Option { availableLevels: levels
                     , disabledModes: List.Nil
                     , lockedModes: List.Nil
-                    , level: fromMaybe (Level 1) $ List.head availableLevels
+                    , level: fromMaybe (Level 1) $ List.head levels
                     , mode: map (\(Mode { id: id' }) -> id') $ List.head modes
                     }
   in
@@ -256,15 +263,15 @@ stillSelected :: List.List AllowedBuilding -> Consumptions -> String -> Maybe St
 stillSelected buildings (Consumptions consumptions) id =
   let
     consumedCount = 
-      numberConsumed (Map.lookup id consumptions)
+      numConsumed (Map.lookup id consumptions)
 
     allowedCount = 
       numberAllowed (findBuilding id buildings)
   in 
     if consumedCount < allowedCount then Just id else Nothing
   where
-    numberConsumed (Just (Consumption { numberPlaced: numberPlaced })) = numberPlaced 
-    numberConsumed Nothing = 0
+    numConsumed (Just (Consumption { numberPlaced: numberPlaced })) = numberPlaced 
+    numConsumed Nothing = 0
 
     numberAllowed (Just (AllowedBuilding { quantity: quantity})) = quantity
     numberAllowed Nothing = 0
@@ -345,4 +352,74 @@ findBuilding id =
   List.head <<< List.filter (isBuilding id)
   where
     isBuilding bId (AllowedBuilding { id: id' }) = bId == id'
+
+
+-- Query functions
+
+selectableBuildings :: ItemSelector -> List.List AllowedBuilding
+selectableBuildings selector =
+  List.filter (isNotConsumed selector) selector.items
+
+isNotConsumed :: ItemSelector -> AllowedBuilding -> Boolean
+isNotConsumed selector building =
+  let
+    (AllowedBuilding b) = building
+  in 
+    (numberConsumed selector building) < b.quantity
+
+numberConsumed :: ItemSelector -> AllowedBuilding -> Int
+numberConsumed selector building =
+  let
+    (Consumptions c) = selector.consumptions
+
+    (AllowedBuilding b) = building
+  in
+    (fromMaybe 0 <<< map (\(Consumption { numberPlaced: n }) -> n) <<< Map.lookup b.id) $ c
+
+isSelected :: ItemSelector -> AllowedBuilding -> Boolean
+isSelected selector (AllowedBuilding { id: id }) =
+  Just id == selector.selected
+
+availableLevels :: ItemSelector -> AllowedBuilding -> List.List Level
+availableLevels selector (AllowedBuilding { id: id }) =
+  let
+    (Options options) = selector.options
+  in
+    (fromMaybe (Level 1 : List.Nil) <<< 
+     map (\(Option option) -> option.availableLevels) <<< 
+     Map.lookup id) $ 
+     options
+
+getBuildingOption :: ItemSelector -> AllowedBuilding -> Option
+getBuildingOption selector (AllowedBuilding { id: id }) =
+  let
+    (Options options) = selector.options
+  in
+    unsafePartial $ fromJust $ Map.lookup id $ options
+
+currentlySelected :: ItemSelector -> Maybe PlacedItem
+currentlySelected selector =
+  let
+    (Options options) = selector.options
+  in 
+    map toPlacedItem selector.selected
+  where
+    toPlacedItem id = { id: id
+                      , level: (optionFor id).level
+                      , mode: (optionFor id).mode
+                      , size: itemSize id
+                      }
+
+    optionFor id = 
+      let
+        (Options options) = selector.options
+        (Option option) = unsafePartial $ fromJust $ Map.lookup id $ options
+      in
+        option
+
+    itemSize id =
+      fromMaybe minimumSize $
+      map (\(AllowedBuilding b) -> b.size) $
+      List.find (\(AllowedBuilding b) -> b.id == id) $
+      selector.items
 

@@ -57,6 +57,9 @@ data Walls = Walls
 
 -- Typesclasses
 
+instance showTownHallDefinition :: Show TownHallDefinition where
+  show (TownHallDefinition def) = show def.level
+
 instance showAllowedBuilding :: Show AllowedBuilding where
   show (AllowedBuilding b) = show b.name
 

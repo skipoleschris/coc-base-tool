@@ -91,8 +91,7 @@ component =
   eval = case _ of
     LevelChange level next -> do
       state <- H.get
-      let (Level lvl) = fromMaybe (Level 11) state.townHallLevel 
-      response <- H.liftAff $ AX.get ("/data/town-hall-definitions/town-hall-" <> show lvl <> ".json")
+      response <- H.liftAff $ AX.get ("/data/town-hall-definitions/town-hall-" <> show level <> ".json")
       let definition = jsonParser (response.response) >>= decodeTownHallDefinition
       let nextState = state { townHallLevel = Just level }
       H.put nextState
