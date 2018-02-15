@@ -66,6 +66,12 @@ instance showAllowedBuilding :: Show AllowedBuilding where
 instance eqAllowedBuilding :: Eq AllowedBuilding where
   eq (AllowedBuilding l) (AllowedBuilding r) = l.id == r.id
 
+instance showMode :: Show Mode where
+  show (Mode m) = show m.name
+
+instance eqMode :: Eq Mode where
+  eq (Mode l) (Mode r) = l.id == r.id
+
 
 -- Json Decoders
 

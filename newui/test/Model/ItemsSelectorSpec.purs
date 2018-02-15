@@ -1,6 +1,6 @@
 module Model.ItemsSelectorSpec where
 
-import Prelude (Unit, discard, map, ($))
+import Prelude (Unit, discard, map, (==), ($))
 
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual, fail)
@@ -8,9 +8,10 @@ import Test.Spec.Assertions (shouldEqual, fail)
 import Data.List as List
 import Data.List ((:))
 import Data.Map as Map
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), fromJust)
+import Partial.Unsafe (unsafePartial)
 
-import Model.CoreTypes (Level(..), Size(..))
+import Model.CoreTypes (Level(..), Size(..), PlacedItem)
 import Model.TownHallDefinitions (AllowedBuilding(..))
 import Model.ItemsSelector
 import Model.TownHallDefinitionsSpec (th11Definition)
@@ -164,10 +165,139 @@ spec =
           Nothing ->
             fail "An option should be returned"
 
+      it "should provide a list of only those buildings not consumed" do
+        let placedItems = townHall :
+                          mortar :
+                          mortar :
+                          mortar :
+                          mortar :
+                          List.Nil
+        let ids = map (\(AllowedBuilding b) -> b.id) $
+                  selectableBuildings $
+                  consumeItems placedItems $ 
+                  freshSelector $ 
+                  th11Definition
+        List.elem "town-hall" ids `shouldEqual` false
+        List.elem "mortar" ids `shouldEqual` false
+        List.elem "cannon" ids `shouldEqual` true
 
+      it "should return info for a Town Hall" do
+        let selector = freshSelector $ 
+                       th11Definition
+        let townHallB = findBuilding "town-hall" selector
+        let info = buildingInfo townHallB selector
+
+        info.id `shouldEqual` "town-hall"
+        info.name `shouldEqual` "Town Hall"
+        info.quantity `shouldEqual` 1
+        info.levels `shouldEqual` (Level 11 : List.Nil)
+        info.modes `shouldEqual` List.Nil
+        info.isSelected `shouldEqual` false
+        info.placedCount `shouldEqual` 0
+        info.level `shouldEqual` (Level 11)
+        info.mode `shouldEqual` Nothing
+
+      it "should return info for a Cannon" do
+        let selector = freshSelector $ 
+                       th11Definition
+        let cannonB = findBuilding "cannon" selector
+        let (AllowedBuilding b) = cannonB
+        let info = buildingInfo cannonB selector
+
+        info.id `shouldEqual` "cannon"
+        info.name `shouldEqual` "Cannon"
+        info.quantity `shouldEqual` 7
+        info.levels `shouldEqual` levelsTo15
+        info.modes `shouldEqual` b.modes
+        info.isSelected `shouldEqual` false
+        (info.isModeDisabled "normal") `shouldEqual` false
+        (info.isModeDisabled "burst") `shouldEqual` false
+        info.placedCount `shouldEqual` 0
+        info.level `shouldEqual` (Level 15)
+        info.mode `shouldEqual` (Just "normal")
+
+      it "should indicate that a building is the selected one" do
+        let selector = selectItem "cannon" $
+                       freshSelector $ 
+                       th11Definition
+        let cannonB = findBuilding "cannon" selector
+        let info = buildingInfo cannonB selector
+
+        info.isSelected `shouldEqual` true
+
+      it "should return the correct number of placed instanced of a building" do
+        let placedItems = mortar :
+                          mortar :
+                          mortar :
+                          List.Nil
+        let selector = consumeItems placedItems $
+                       freshSelector $ 
+                       th11Definition
+        let mortarB = findBuilding "mortar" selector
+        let info = buildingInfo mortarB selector
+
+        info.placedCount `shouldEqual` 3
+
+      it "should return correct level and mode when these have been changed" do
+        let selector = changeModeSelection "cannon" "burst" $
+                       changeLevelSelection "cannon" (Level 13) $
+                       freshSelector $ 
+                       th11Definition
+        let cannonB = findBuilding "cannon" selector
+        let info = buildingInfo cannonB selector
+
+        info.level `shouldEqual` (Level 13)
+        info.mode `shouldEqual` (Just "burst")
+
+      it "should disable a mode that is not available at the current building level" do
+        let selector = changeLevelSelection "cannon" (Level 4) $
+                       freshSelector $ 
+                       th11Definition
+        let cannonB = findBuilding "cannon" selector
+        let info = buildingInfo cannonB selector
+
+        (info.isModeDisabled "normal") `shouldEqual` false
+        (info.isModeDisabled "burst") `shouldEqual` true
+
+      it "should disable a mode where the allowed number has been placed" do
+        let placedItems = burstCannon :
+                          List.Nil
+        let selector = consumeItems placedItems $
+                       freshSelector $ 
+                       th11Definition
+        let cannonB = findBuilding "cannon" selector
+        let info = buildingInfo cannonB selector
+
+        (info.isModeDisabled "normal") `shouldEqual` false
+        (info.isModeDisabled "burst") `shouldEqual` true
+
+findBuilding :: String -> ItemSelector -> AllowedBuilding
+findBuilding id selector =
+  unsafePartial $ fromJust $ List.find (\(AllowedBuilding b) -> b.id == id) $ selector.items
 
 levelsTo15 :: List.List Level
 levelsTo15 =  List.reverse $ map Level $ List.range 1 15
 
 sizeOf :: Int -> Size
 sizeOf s = Size { width: s, height: s } 
+
+townHall :: PlacedItem
+townHall = { id: "town-hall"
+           , level: Level 11
+           , mode: Nothing
+           , size: sizeOf 4 
+           }
+
+mortar :: PlacedItem
+mortar = { id: "mortar"
+         , level: Level 9
+         , mode: Nothing
+         , size: sizeOf 3 
+         }
+           
+burstCannon :: PlacedItem
+burstCannon = { id: "cannon"
+              , level: Level 15
+              , mode: Just "burst"
+              , size: sizeOf 3 
+              }

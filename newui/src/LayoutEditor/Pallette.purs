@@ -1,6 +1,6 @@
 module LayoutEditor.Pallette where
 
-import Prelude (type (~>), bind, const, discard, map, not, pure, show, ($), (&&), (<<<), (<>), (==), (||))
+import Prelude (type (~>), bind, const, discard, map, not, pure, show, ($), (&&), (<<<), (<>), (==))
 
 import Data.String.Utils (startsWith)
 import Data.Array as Array
@@ -16,8 +16,8 @@ import Halogen.HTML.Properties as HP
 import Halogen.Query as HQ
 
 import Model.CoreTypes (Level(..), PlacedItem)
-import Model.TownHallDefinitions (TownHallDefinition(..), AllowedBuilding(..), Mode(..))
-import Model.ItemsSelector (ItemSelector, Option(..), availableLevels, changeLevelSelection, changeModeSelection, emptySelector, freshSelector, getBuildingOption, isSelected, numberConsumed, selectItem, selectableBuildings, currentlySelected)
+import Model.TownHallDefinitions (TownHallDefinition(..), AllowedBuilding, Mode(..))
+import Model.ItemsSelector (ItemSelector, changeLevelSelection, changeModeSelection, emptySelector, freshSelector, selectItem, selectableBuildings, BuildingInfo, buildingInfo, currentlySelected)
 
 type State =
   { selector :: ItemSelector
@@ -56,58 +56,46 @@ component =
     in
       HH.div [ HP.class_ (HH.ClassName "pallette") ] 
              (Array.fromFoldable $ map (makePalletteItem state.selector) visibleItems)
- 
+
   makePalletteItem :: ItemSelector -> AllowedBuilding -> H.ComponentHTML Query
   makePalletteItem selector building =
     let
-      (AllowedBuilding b) = building
+      info = buildingInfo building selector
 
-      style = 
-        if (isSelected selector building) 
-        then " selected" 
-        else "" 
-
-      levels = 
-        availableLevels selector building
-
-      placedCount = 
-        numberConsumed selector building
-
-      option =
-        getBuildingOption selector building
+      style = if info.isSelected then " selected" else "" 
     in
       HH.div [ HP.class_ (HH.ClassName ("pallete-item" <> style)) 
-             , HE.onClick (HE.input_ (ItemSelected b.id))
+             , HE.onClick (HE.input_ (ItemSelected info.id))
              ]
              [ HH.div [ HP.class_ (HH.ClassName "pallette-image") ]
-                      [ HH.img [ HP.src (buildingImage building option) 
-                               , HP.alt b.name
+                      [ HH.img [ HP.src (buildingImage info) 
+                               , HP.alt info.name
                                ]
                       ]
              , HH.div [ HP.class_ (HH.ClassName "pallette-detail") ]
-                      [ HH.text b.name
+                      [ HH.text info.name
                       , HH.br_
-                      , HH.text (show placedCount <> " of " <> show b.quantity <> " placed")
+                      , HH.text (show info.placedCount <> " of " <> show info.quantity <> " placed")
                       ]
              , HH.div []
-                      [ viewLevels b.id option levels
-                      , viewModes b.id option b.modes 
+                      [ viewLevels info
+                      , viewModes info 
                       ]
              ]         
 
-  buildingImage :: AllowedBuilding -> Option -> String
-  buildingImage (AllowedBuilding building) (Option option) = 
+  buildingImage :: BuildingInfo -> String
+  buildingImage info = 
     let 
       id = 
-        if (startsWith "wall" building.id)
+        if (startsWith "wall" info.id)
         then "wall"
-        else building.id
+        else info.id
 
       level = 
-        option.level
+        info.level
 
       mode = 
-        (fromMaybe "" <<< map (\m -> "-" <> m)) $ option.mode
+        (fromMaybe "" <<< map (\m -> "-" <> m)) $ info.mode
     in
       "data/images/" <> 
       id <>
@@ -118,18 +106,18 @@ component =
       mode <>
       ".png"      
 
-  viewLevels :: String -> Option -> List.List Level -> H.ComponentHTML Query
-  viewLevels id (Option opt) levels =
+  viewLevels :: BuildingInfo -> H.ComponentHTML Query
+  viewLevels info =
     let
       optionise lvl = 
         HH.option [ HP.value (show lvl) 
-                  , HP.selected (opt.level == lvl) 
+                  , HP.selected (info.level == lvl) 
                   ] 
                   [ HH.text (show lvl) ]
 
       levelInput f = map (HQ.action <<< f <<< Level) <<< fromString
     in                  
-      case levels of
+      case info.levels of
         Level 1 : List.Nil ->
           HH.text ""
 
@@ -140,12 +128,12 @@ component =
           HH.div []
                  [ HH.div [ HP.class_ (HH.ClassName "pallette-label") ] 
                           [ HH.label [] [ HH.text "Level: " ] ]
-                 , HH.select [ HE.onValueChange (levelInput (LevelChange id))
-                  ] $ toUnfoldable (map optionise levels)
+                 , HH.select [ HE.onValueChange (levelInput (LevelChange info.id))
+                  ] $ toUnfoldable (map optionise xs)
                  ]
 
-  viewModes :: String -> Option -> List.List Mode -> H.ComponentHTML Query
-  viewModes id (Option opt) modes = 
+  viewModes :: BuildingInfo -> H.ComponentHTML Query
+  viewModes info = 
     let 
       optionise (Mode mode) = 
         HH.option [ HP.value mode.id 
@@ -156,7 +144,7 @@ component =
 
       modeInput f = map (HQ.action <<< f) <<< Just
     in
-      case modes of
+      case info.modes of
         List.Nil ->
           HH.text ""
 
@@ -164,14 +152,12 @@ component =
           HH.div []
                  [ HH.div [ HP.class_ (HH.ClassName "pallette-label") ] 
                           [ HH.label [] [ HH.text "Mode: " ] ]
-                 , HH.select [ HE.onValueChange (modeInput (ModeChange id))
-                  ] $ toUnfoldable (map optionise modes)
+                 , HH.select [ HE.onValueChange (modeInput (ModeChange info.id))
+                  ] $ toUnfoldable (map optionise xs)
                  ]
     where
-      isSelected mode = Just mode.id == opt.mode
-
-      isDisabled mode = List.elem mode.id opt.disabledModes ||
-                        List.elem mode.id opt.lockedModes
+      isSelected mode = Just mode.id == info.mode
+      isDisabled mode = info.isModeDisabled mode.id
 
   eval :: Query ~> H.ComponentDSL State Query Message m
   eval = case _ of
@@ -200,7 +186,6 @@ component =
       oldState <- H.get
       let nextState = resetStateIfNeeded def oldState
       H.put nextState
-      H.raise $ PalletteSelection (currentlySelected nextState.selector)
       pure next
 
   resetStateIfNeeded :: Maybe TownHallDefinition -> State -> State

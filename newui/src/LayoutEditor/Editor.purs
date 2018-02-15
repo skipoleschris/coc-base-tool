@@ -81,7 +81,9 @@ component =
 
   applyDefinitionUpdated :: Either String TownHallDefinition -> State -> State
   applyDefinitionUpdated definition state =
-    state { townHallDefinition = hush definition }
+    state { townHallDefinition = hush definition
+          , selectedItem = Nothing
+          }
 
   applyLayoutNameUpdated :: Maybe String -> State -> State
   applyLayoutNameUpdated name state =

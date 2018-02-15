@@ -10,13 +10,11 @@ module Model.ItemsSelector ( ItemSelector
                            , changeLevelSelection
                            , changeModeSelection
                            , selectableBuildings
-                           , numberConsumed
-                           , isSelected
-                           , availableLevels
-                           , getBuildingOption
+                           , BuildingInfo
+                           , buildingInfo
                            , currentlySelected) where
 
-import Prelude (class Eq, class Show, show, map, (<>), (+), ($), (<<<), (>>=), (==), (<), (>), (>=))
+import Prelude (class Eq, class Show, show, map, (<>), (+), ($), (<<<), (>>=), (==), (<), (>), (>=), (||))
 
 import Data.Foldable (foldl)
 import Data.List as List
@@ -365,23 +363,48 @@ isNotConsumed selector building =
   let
     (AllowedBuilding b) = building
   in 
-    (numberConsumed selector building) < b.quantity
+    (numberConsumed building selector) < b.quantity
 
-numberConsumed :: ItemSelector -> AllowedBuilding -> Int
-numberConsumed selector building =
+
+type BuildingInfo = 
+  { id :: String
+  , name :: String
+  , quantity :: Int
+  , levels :: List.List Level
+  , modes :: List.List Mode
+  , isSelected :: Boolean
+  , isModeDisabled :: String -> Boolean
+  , placedCount :: Int
+  , level :: Level
+  , mode :: Maybe String
+  }
+
+buildingInfo :: AllowedBuilding -> ItemSelector -> BuildingInfo
+buildingInfo building selector =
   let
-    (Consumptions c) = selector.consumptions
-
     (AllowedBuilding b) = building
-  in
-    (fromMaybe 0 <<< map (\(Consumption { numberPlaced: n }) -> n) <<< Map.lookup b.id) $ c
 
-isSelected :: ItemSelector -> AllowedBuilding -> Boolean
-isSelected selector (AllowedBuilding { id: id }) =
+    (Option option) = buildingOption building selector
+  in
+    { id: b.id
+    , name: b.name
+    , quantity: b.quantity
+    , levels: availableLevels building selector
+    , modes: b.modes
+    , isSelected: isSelected building selector
+    , isModeDisabled: (\m -> List.elem m option.disabledModes ||
+                             List.elem m option.lockedModes)
+    , placedCount: numberConsumed building selector 
+    , level: option.level
+    , mode: option.mode
+    } 
+
+isSelected :: AllowedBuilding -> ItemSelector -> Boolean
+isSelected (AllowedBuilding { id: id }) selector =
   Just id == selector.selected
 
-availableLevels :: ItemSelector -> AllowedBuilding -> List.List Level
-availableLevels selector (AllowedBuilding { id: id }) =
+availableLevels :: AllowedBuilding -> ItemSelector -> List.List Level
+availableLevels (AllowedBuilding { id: id }) selector =
   let
     (Options options) = selector.options
   in
@@ -390,8 +413,17 @@ availableLevels selector (AllowedBuilding { id: id }) =
      Map.lookup id) $ 
      options
 
-getBuildingOption :: ItemSelector -> AllowedBuilding -> Option
-getBuildingOption selector (AllowedBuilding { id: id }) =
+numberConsumed :: AllowedBuilding -> ItemSelector -> Int
+numberConsumed building selector =
+  let
+    (Consumptions c) = selector.consumptions
+
+    (AllowedBuilding b) = building
+  in
+    (fromMaybe 0 <<< map (\(Consumption { numberPlaced: n }) -> n) <<< Map.lookup b.id) $ c
+
+buildingOption :: AllowedBuilding -> ItemSelector -> Option
+buildingOption (AllowedBuilding { id: id }) selector =
   let
     (Options options) = selector.options
   in
