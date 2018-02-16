@@ -15,23 +15,22 @@ import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Halogen.Query as HQ
 
-import Model.CoreTypes (Level(..), PlacedItem)
-import Model.TownHallDefinitions (TownHallDefinition(..), AllowedBuilding, Mode(..))
-import Model.ItemsSelector (ItemSelector, changeLevelSelection, changeModeSelection, emptySelector, freshSelector, selectItem, selectableBuildings, BuildingInfo, buildingInfo, currentlySelected)
+import Model.CoreTypes (Level(..))
+import Model.TownHallDefinitions (AllowedBuilding, Mode(..))
+import Model.ItemsSelector (ItemSelector, changeLevelSelection, changeModeSelection, emptySelector, selectItem, selectableBuildings, BuildingInfo, buildingInfo)
 
-type State =
-  { selector :: ItemSelector
-  , townHallLevel :: Maybe Level
-  }
+type State = {
+  selector :: ItemSelector
+}
+
+type Input = ItemSelector
 
 data Query a = ItemSelected String a
              | LevelChange String Level a
              | ModeChange String String a
-             | SelectedTownHallDefinition (Maybe TownHallDefinition) a
+             | ReplaceSelector ItemSelector a
 
-type Input = Maybe TownHallDefinition
-
-data Message = PalletteSelection (Maybe PlacedItem)
+data Message = SelectorUpdate ItemSelector
 
 component :: forall m. H.Component HH.HTML Query Input Message m
 component =
@@ -39,15 +38,14 @@ component =
     { initialState: const initialState
     , render
     , eval
-    , receiver: HE.input SelectedTownHallDefinition
+    , receiver: HE.input ReplaceSelector
     }
   where
 
   initialState :: State
-  initialState = 
-    { selector: emptySelector 
-    , townHallLevel: Nothing
-    }
+  initialState = {
+    selector: emptySelector
+  }
 
   render :: State -> H.ComponentHTML Query
   render state =
@@ -163,42 +161,24 @@ component =
   eval = case _ of
     ItemSelected id next -> do
       state <- H.get
-      let nextState = state { selector = selectItem id state.selector }
+      let nextState = { selector: selectItem id state.selector }
       H.put nextState
-      H.raise $ PalletteSelection (currentlySelected nextState.selector)
+      H.raise $ SelectorUpdate nextState.selector
       pure next
 
     LevelChange id level next -> do
       state <- H.get
-      let nextState = state { selector = changeLevelSelection id level state.selector }
+      let nextState = { selector: changeLevelSelection id level state.selector }
       H.put nextState
-      H.raise $ PalletteSelection (currentlySelected nextState.selector)
+      H.raise $ SelectorUpdate nextState.selector
       pure next
 
     ModeChange id mode next -> do
       state <- H.get
-      let nextState = state { selector = changeModeSelection id mode state.selector }
-      H.put nextState
-      H.raise $ PalletteSelection (currentlySelected nextState.selector)
+      let nextState = { selector: changeModeSelection id mode state.selector }
+      H.raise $ SelectorUpdate nextState.selector
       pure next
 
-    SelectedTownHallDefinition def next -> do
-      oldState <- H.get
-      let nextState = resetStateIfNeeded def oldState
-      H.put nextState
+    ReplaceSelector selector next -> do
+      H.put { selector: selector }
       pure next
-
-  resetStateIfNeeded :: Maybe TownHallDefinition -> State -> State
-  resetStateIfNeeded definition state =
-    (fromMaybe emptyState <<< map (propogateOrReplace state)) $ definition
-    where
-      emptyState = { selector: emptySelector, townHallLevel: Nothing }
-
-      propogateOrReplace state' def =
-        let
-          (TownHallDefinition d) = def
-        in
-          if (Just d.level == state'.townHallLevel)
-          then state'
-          else { selector: freshSelector def, townHallLevel: Just d.level }
-

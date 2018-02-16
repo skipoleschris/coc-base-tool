@@ -3,10 +3,10 @@ module LayoutEditor.Editor where
 import Prelude
 
 import Control.Monad.Aff (Aff)
-import Data.Either (Either, hush)
-import Data.Either.Nested (Either3)
-import Data.Functor.Coproduct.Nested (Coproduct3)
-import Data.Maybe (Maybe(Nothing))
+import Data.Either (Either(..))
+import Data.Either.Nested (Either4)
+import Data.Functor.Coproduct.Nested (Coproduct4)
+import Data.Maybe (Maybe(..))
 
 import Halogen as H
 import Halogen.Component.ChildPath as CP
@@ -16,24 +16,28 @@ import Network.HTTP.Affjax as AX
 
 import Model.CoreTypes (PlacedItem)
 import Model.TownHallDefinitions (TownHallDefinition)
+import Model.ItemsSelector (ItemSelector, emptySelector, freshSelector, currentlySelected)
+
 import LayoutEditor.Overview as Overview
 import LayoutEditor.Toolbar as Toolbar
 import LayoutEditor.Pallette as Pallette
+import LayoutEditor.Grid as Grid
 
 data Query a = OverviewUpdated Overview.Message a
              | ToolbarAction Toolbar.Message a
              | PalletteUpdated Pallette.Message a
+             | GridUpdated Grid.Message a
 
 type State =
   { townHallDefinition :: Maybe TownHallDefinition
   , layoutName :: Maybe String
   , wallDrawingMode :: Boolean
-  , selectedItem :: Maybe PlacedItem 
+  , selector :: ItemSelector
   }
 
-type ChildQuery = Coproduct3 Overview.Query Toolbar.Query Pallette.Query
+type ChildQuery = Coproduct4 Overview.Query Toolbar.Query Pallette.Query Grid.Query
 
-type ChildSlot = Either3 Unit Unit Unit
+type ChildSlot = Either4 Unit Unit Unit Unit
 
 component :: forall eff. H.Component HH.HTML Query Unit Void (Aff (ajax :: AX.AJAX | eff))
 component =
@@ -50,7 +54,7 @@ component =
     { townHallDefinition: Nothing
     , layoutName: Nothing
     , wallDrawingMode: true
-    , selectedItem: Nothing
+    , selector: emptySelector
     }
 
   render :: State -> H.ParentHTML Query ChildQuery ChildSlot (Aff (ajax :: AX.AJAX | eff))
@@ -58,7 +62,8 @@ component =
     HH.div [] 
            [ HH.slot' CP.cp1 unit Overview.component unit (HE.input OverviewUpdated)
            , HH.slot' CP.cp2 unit Toolbar.component unit (HE.input ToolbarAction)
-           , HH.slot' CP.cp3 unit Pallette.component state.townHallDefinition (HE.input PalletteUpdated)
+           , HH.slot' CP.cp3 unit Pallette.component state.selector (HE.input PalletteUpdated)
+           , HH.slot' CP.cp4 unit Grid.component (currentlySelected state.selector) (HE.input GridUpdated)
            ]
 
   eval :: Query ~> H.ParentDSL State Query ChildQuery ChildSlot Void (Aff (ajax :: AX.AJAX | eff))
@@ -75,20 +80,27 @@ component =
       -- TODO
       pure next
 
-    PalletteUpdated (Pallette.PalletteSelection item) next -> do
-      H.modify (applyPalletteSelection item)
+    PalletteUpdated (Pallette.SelectorUpdate selector) next -> do
+      H.modify (applySelectorUpdate selector)
+      pure next
+
+    GridUpdated (Grid.PlacedItemsChange items) next -> do
       pure next
 
   applyDefinitionUpdated :: Either String TownHallDefinition -> State -> State
   applyDefinitionUpdated definition state =
-    state { townHallDefinition = hush definition
-          , selectedItem = Nothing
-          }
+    case definition of
+      Left _ -> 
+        state      -- error loading definiton
+      Right def ->
+        state { townHallDefinition = Just def
+              , selector = freshSelector def
+              }
 
   applyLayoutNameUpdated :: Maybe String -> State -> State
   applyLayoutNameUpdated name state =
     state { layoutName = name }
 
-  applyPalletteSelection :: Maybe PlacedItem -> State -> State
-  applyPalletteSelection item state =
-    state { selectedItem = item }
+  applySelectorUpdate :: ItemSelector -> State -> State
+  applySelectorUpdate selector state =
+    state { selector = selector }
