@@ -7,6 +7,7 @@ import Data.Either (Either(..))
 import Data.Either.Nested (Either4)
 import Data.Functor.Coproduct.Nested (Coproduct4)
 import Data.Maybe (Maybe(..))
+import Data.List as List
 
 import Halogen as H
 import Halogen.Component.ChildPath as CP
@@ -16,7 +17,7 @@ import Network.HTTP.Affjax as AX
 
 import Model.CoreTypes (PlacedItem)
 import Model.TownHallDefinitions (TownHallDefinition)
-import Model.ItemsSelector (ItemSelector, emptySelector, freshSelector, currentlySelected)
+import Model.ItemsSelector (ItemSelector, emptySelector, freshSelector, consumeItems, currentlySelected)
 
 import LayoutEditor.Overview as Overview
 import LayoutEditor.Toolbar as Toolbar
@@ -85,6 +86,7 @@ component =
       pure next
 
     GridUpdated (Grid.PlacedItemsChange items) next -> do
+      H.modify (applyPlacedItemsUpdate items)
       pure next
 
   applyDefinitionUpdated :: Either String TownHallDefinition -> State -> State
@@ -104,3 +106,7 @@ component =
   applySelectorUpdate :: ItemSelector -> State -> State
   applySelectorUpdate selector state =
     state { selector = selector }
+
+  applyPlacedItemsUpdate :: List.List PlacedItem -> State -> State
+  applyPlacedItemsUpdate items state =
+    state { selector = consumeItems items state.selector }

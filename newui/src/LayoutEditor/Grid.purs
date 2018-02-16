@@ -16,11 +16,13 @@ import Halogen.HTML.Properties as HP
 import Halogen.Query as HQ
 
 import Model.CoreTypes (Level(..), PlacedItem)
-import Model.TownHallDefinitions (TownHallDefinition(..), AllowedBuilding, Mode(..))
-import Model.ItemsSelector (ItemSelector, changeLevelSelection, changeModeSelection, emptySelector, freshSelector, selectItem, selectableBuildings, BuildingInfo, buildingInfo, currentlySelected)
+import Model.Layout (Layout, makeLayout)
+--import Model.TownHallDefinitions (TownHallDefinition(..), AllowedBuilding, Mode(..))
+--import Model.ItemsSelector (ItemSelector, changeLevelSelection, changeModeSelection, emptySelector, freshSelector, selectItem, selectableBuildings, BuildingInfo, buildingInfo, currentlySelected)
 
-type State =
-  { placeholder :: String
+type State = 
+  { layout :: Layout
+  , nextItem :: Maybe PlacedItem
   }
 
 data Query a = SelectedItem (Maybe PlacedItem) a
@@ -41,7 +43,8 @@ component =
 
   initialState :: State
   initialState = 
-    { placeholder: ""
+    { layout: makeLayout
+    , nextItem: Nothing  
     }
 
   render :: State -> H.ComponentHTML Query
@@ -51,5 +54,8 @@ component =
 
   eval :: Query ~> H.ComponentDSL State Query Message m
   eval = case _ of
-    SelectedItem _ next -> do
+    SelectedItem item next -> do
+      state <- H.get
+      let nextState = state { nextItem = item }
+      H.put nextState
       pure next
